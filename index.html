@@ -1,162 +1,968 @@
-<!-- META {"title":"gabut","desc":" ","date":"2026-08-19T07:00:38.683Z"} -->
+<!-- META {"title":"Gelombang Suara Studio - Image, Video & Text Acoustic Transceiver","desc":"Aplikasi Pengubah Gambar & Video ke Suara, Buka Gambar dari Suara, serta Komunikasi Akustik Offline","date":"2026-08-24T13:35:00.000Z"} -->
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoundChat - Chat Tanpa Wi-Fi via Gelombang Suara</title>
+    <title>Gelombang Suara Studio - Suara, Gambar & Video Akustik</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            900: '#134e4a',
+                            dark: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937',
+                            accent: '#6366F1'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.4)' },
+                            '100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.9)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .chat-scroll::-webkit-scrollbar {
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
-        .chat-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(156, 163, 175, 0.5);
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
             border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        .canvas-grid {
+            background-size: 20px 20px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px -3px rgba(79, 70, 229, 0.4);
+        }
+        
+        .subtab-btn.active {
+            background-color: #374151;
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+        }
+        
+        .scanline-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- Header Navigation -->
-    <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
-        <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <!-- Top Header -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <!-- Brand Logo -->
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/30">
-                    <i data-lucide="radio" class="w-6 h-6 animate-pulse"></i>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                    <i data-lucide="activity" class="w-6 h-6 text-white animate-pulse"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none text-white">SoundChat</h1>
-                    <p class="text-xs text-slate-400 mt-1">Komunikasi Offline via Gelombang Akustik</p>
+                    <h1 class="font-black text-xl tracking-tight bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                        Gelombang Suara Studio
+                    </h1>
+                    <p class="text-xs text-slate-400">Audio-Visual Synthesizer, Image/Video Sonification & Acoustic Data Transceiver</p>
                 </div>
             </div>
 
-            <!-- Receiver Toggle -->
-            <button id="toggleMicBtn" onclick="toggleReceiver()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-md bg-emerald-600 hover:bg-emerald-500 text-white">
-                <i id="micIcon" data-lucide="mic" class="w-4 h-4"></i>
-                <span id="micStatusText">Mikrofon Aktif</span>
+            <!-- Master Microphone & Status Bar -->
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-xs">
+                    <span id="globalStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span id="globalStatusText" class="text-slate-300 font-mono">Audio Engine Siap</span>
+                </div>
+                <button id="masterMicBtn" onclick="toggleGlobalMicrophone()" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600">
+                    <i id="masterMicIcon" data-lucide="mic-off" class="w-4 h-4 text-slate-400"></i>
+                    <span id="masterMicLabel">Aktifkan Mikrofon</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 mt-2 border-t border-slate-800/60 flex overflow-x-auto gap-2 py-2">
+            <button onclick="switchTab('img-sound')" id="tab-img-sound" class="tab-btn active flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition whitespace-nowrap text-slate-300 hover:text-white">
+                <i data-lucide="image" class="w-4 h-4"></i>
+                <span>🖼️ Gambar ⇄ Suara</span>
+            </button>
+            <button onclick="switchTab('video-sound')" id="tab-video-sound" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition whitespace-nowrap text-slate-400 hover:text-white">
+                <i data-lucide="video" class="w-4 h-4"></i>
+                <span>🎬 Video ⇄ Suara</span>
+            </button>
+            <button onclick="switchTab('sound-chat')" id="tab-sound-chat" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition whitespace-nowrap text-slate-400 hover:text-white">
+                <i data-lucide="radio" class="w-4 h-4"></i>
+                <span>📻 SoundChat Teks</span>
+            </button>
+            <button onclick="switchTab('spectrogram-lab')" id="tab-spectrogram-lab" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition whitespace-nowrap text-slate-400 hover:text-white">
+                <i data-lucide="waves" class="w-4 h-4"></i>
+                <span>🔬 Lab Spektrogram & FFT</span>
             </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-3xl w-full mx-auto p-4 flex flex-col gap-4">
-
-        <!-- Visualizer & Status Panel -->
-        <div class="bg-slate-800/80 backdrop-blur border border-slate-700/60 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
-            <div class="flex justify-between items-center text-xs text-slate-400">
-                <span class="flex items-center gap-1.5 font-medium">
-                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span id="statusText" class="text-slate-200">Siap Mendengarkan Sinyal Suara...</span>
-                </span>
-                <span id="freqRangeLabel" class="font-mono text-slate-400">Frekuensi: 800Hz - 2400Hz</span>
+    <!-- Global Audio Visualizer Mini Bar -->
+    <div class="bg-slate-900 border-b border-slate-800/80 px-4 py-1.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs">
+            <div class="flex items-center gap-2 text-slate-400">
+                <i data-lucide="gauge" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span>Real-Time Spectrum:</span>
+                <span id="peakFreqDisplay" class="font-mono text-cyan-300 font-semibold">0 Hz</span>
             </div>
+            <div class="flex-1 max-w-md h-5 bg-slate-950 rounded-md overflow-hidden border border-slate-800 relative">
+                <canvas id="miniSpectrumCanvas" class="w-full h-full"></canvas>
+            </div>
+            <div class="flex items-center gap-2 text-slate-400">
+                <span id="audioContextState" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">44.1 kHz</span>
+            </div>
+        </div>
+    </div>
 
-            <!-- Spectrum Visualizer Canvas -->
-            <div class="relative w-full h-20 bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
-                <canvas id="visualizer" class="w-full h-full"></canvas>
-                <div id="txRxIndicator" class="hidden absolute inset-0 bg-indigo-900/40 backdrop-blur-xs flex items-center justify-center font-bold text-indigo-200 text-sm tracking-wider">
-                    <i data-lucide="volume-2" class="w-5 h-5 mr-2 animate-bounce"></i>
-                    MEMANCARKAN GELOMBANG SUARA...
+    <!-- Main Dynamic Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+        <!-- ========================================================================================= -->
+        <!-- TAB 1: GAMBAR ⇄ SUARA (IMAGE <-> SOUND) -->
+        <!-- ========================================================================================= -->
+        <section id="section-img-sound" class="tab-content flex flex-col gap-6">
+            
+            <!-- Section Header & Mode Subtabs -->
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="image" class="w-6 h-6 text-indigo-400"></i>
+                        Konversi Gambar & Gelombang Suara
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Ubah gambar menjadi suara (Spektrogram/SSTV) atau buka gambar dari rekaman suara / mic secara langsung.</p>
+                </div>
+                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button onclick="switchImgSubtab('img-to-sound')" id="subtab-img-to-sound" class="subtab-btn active px-4 py-2 rounded-lg text-xs font-semibold transition">
+                        🖼️ ➜ 🔊 Gambar Jadi Suara
+                    </button>
+                    <button onclick="switchImgSubtab('sound-to-img')" id="subtab-sound-to-img" class="subtab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 transition">
+                        🔊 ➜ 🖼️ Buka Gambar Dari Suara
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Chat History Area -->
-        <div class="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 flex flex-col shadow-inner min-h-[300px] max-h-[500px]">
-            <div id="chatBox" class="flex-1 overflow-y-auto chat-scroll flex flex-col gap-3 pr-2">
-                <!-- Welcome Banner -->
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-400 text-center mx-auto max-w-md">
-                    <i data-lucide="info" class="w-4 h-4 mx-auto mb-1 text-indigo-400"></i>
-                    Dekatkan speaker HP/Laptop pengirim dengan mikrofon penerima. Pesan dikirim melalui modulasi frekuensi audio (FSK) secara langsung.
+            <!-- SUBTAB 1.1: GAMBAR -> SUARA (IMAGE TO SOUND) -->
+            <div id="panel-img-to-sound" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Column: Image Canvas & Input -->
+                <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i data-lucide="palette" class="w-4 h-4 text-indigo-400"></i>
+                            1. Sumber Gambar (Upload / Gambar / Preset)
+                        </h3>
+                        <div class="flex gap-2">
+                            <label class="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                <span>Upload Gambar</span>
+                                <input type="file" id="imageFileInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                            </label>
+                            <button onclick="clearImageCanvas()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 transition">
+                                Bersihkan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preset Badges -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                        <span class="text-slate-400 text-[11px] whitespace-nowrap">Contoh Preset:</span>
+                        <button onclick="loadPresetImage('soundchat')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 whitespace-nowrap transition">📡 Logo Sound</button>
+                        <button onclick="loadPresetImage('cat')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 whitespace-nowrap transition">🐱 Kucing</button>
+                        <button onclick="loadPresetImage('music')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 whitespace-nowrap transition">🎵 Not Balok</button>
+                        <button onclick="loadPresetImage('secret')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 whitespace-nowrap transition">🔐 Teks Rahasia</button>
+                        <button onclick="loadPresetImage('galaxy')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-700 whitespace-nowrap transition">🌌 Galaksi</button>
+                    </div>
+
+                    <!-- Canvas Drawing Area -->
+                    <div class="relative w-full aspect-[2/1] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 canvas-grid flex items-center justify-center">
+                        <canvas id="sourceImageCanvas" width="300" height="150" class="w-full h-full object-contain cursor-crosshair"></canvas>
+                        <div id="canvasPlayhead" class="hidden absolute top-0 bottom-0 w-0.5 bg-cyan-400 shadow-[0_0_10px_#22d3ee] pointer-events-none"></div>
+                    </div>
+
+                    <!-- Drawing Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="text-slate-400">Alat Gambar:</span>
+                            <div class="flex gap-1">
+                                <button onclick="setDrawTool('pen')" id="tool-pen" class="p-1.5 bg-indigo-600 text-white rounded-md tool-btn"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button onclick="setDrawTool('eraser')" id="tool-eraser" class="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-md tool-btn"><i data-lucide="eraser" class="w-4 h-4"></i></button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-500">Ukuran:</span>
+                                <input type="range" id="brushSize" min="2" max="25" value="6" class="w-20 accent-indigo-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="drawTextInput" placeholder="Tulis teks..." class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 w-28 focus:outline-none focus:border-indigo-500">
+                            <button onclick="drawTextOnCanvas()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 font-medium">Tempel Teks</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sound Synthesis Controls & Player -->
+                <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                        2. Parameter Sonifikasi & Sintesis Suara
+                    </h3>
+
+                    <!-- Mode Sonifikasi -->
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-medium">Metode Gelombang Suara:</label>
+                        <select id="sonifyMethod" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <option value="spectrogram_additive">🎵 Visual Spektrogram (Gambar Tampil di Spektrogram Air Terjun)</option>
+                            <option value="sstv_fast">📻 SSTV Robot36 Radio Scan (Transmisi Audio Retro Amatir)</option>
+                            <option value="chroma_stereo">🎧 Stereo Harmonics (Luminance & Warna RGB)</option>
+                        </select>
+                    </div>
+
+                    <!-- Parameter Sliders -->
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="flex justify-between text-slate-400 mb-1">
+                                <span>Durasi Suara:</span>
+                                <span id="durVal" class="font-mono text-cyan-400 font-bold">4.0s</span>
+                            </div>
+                            <input type="range" id="soundDuration" min="1.5" max="10.0" step="0.5" value="4.0" class="w-full accent-cyan-400" oninput="document.getElementById('durVal').innerText = this.value + 's'">
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="flex justify-between text-slate-400 mb-1">
+                                <span>Rentang Freq:</span>
+                                <span id="freqRangeText" class="font-mono text-cyan-400 font-bold">1k-12kHz</span>
+                            </div>
+                            <select id="freqRangeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1 text-[11px] text-white">
+                                <option value="1000-12000">1 kHz - 12 kHz (Standar Spektrogram)</option>
+                                <option value="500-8000">500 Hz - 8 kHz (Ramah Speaker HP)</option>
+                                <option value="2000-16000">2 kHz - 16 kHz (Hi-Fi Tajam)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Generate & Audio Output Box -->
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3 mt-auto">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-300">Hasil Suara Gambar</span>
+                            <span id="synthStatusBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Belum Disintesis</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btnSynthesizeImg" onclick="synthesizeImageToAudio()" class="col-span-2 py-3 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold rounded-xl text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                <span>Sintesis Gambar ➜ Suara</span>
+                            </button>
+                            <button id="btnPlayImgAudio" onclick="playGeneratedImageAudio()" disabled class="py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                <span>Putar Suara</span>
+                            </button>
+                            <button id="btnDownloadImgWav" onclick="downloadImageWav()" disabled class="py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Download .WAV</span>
+                            </button>
+                        </div>
+
+                        <!-- Audio Waveform Preview -->
+                        <div class="h-12 bg-slate-900 rounded-lg overflow-hidden border border-slate-800 relative">
+                            <canvas id="synthWaveformCanvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Quick Test Buttons -->
-        <div class="flex gap-2 overflow-x-auto pb-1 text-xs">
-            <span class="text-slate-400 py-1.5 px-1 font-medium whitespace-nowrap">Pesan Cepat:</span>
-            <button onclick="setQuickMessage('Halo!')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 whitespace-nowrap transition">👋 Halo!</button>
-            <button onclick="setQuickMessage('Tes Suara 123')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 whitespace-nowrap transition">🔊 Tes Suara 123</button>
-            <button onclick="setQuickMessage('OK Siap')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 whitespace-nowrap transition">✅ OK Siap</button>
-        </div>
+            <!-- SUBTAB 1.2: SUARA -> GAMBAR (SOUND TO IMAGE / DECODER) -->
+            <div id="panel-sound-to-img" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Column: Audio Input Source & Settings -->
+                <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i data-lucide="mic" class="w-4 h-4 text-emerald-400"></i>
+                        1. Sumber Suara (File Audio / Mikrofon Langsung)
+                    </h3>
 
-        <!-- Input Box & Controls -->
-        <form id="chatForm" onsubmit="sendMessage(event)" class="flex gap-2 items-center">
-            <input 
-                type="text" 
-                id="messageInput" 
-                placeholder="Ketik pesan suara..." 
-                maxlength="40"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                required 
-                autocomplete="off"
-            />
-            <button 
-                type="submit" 
-                id="sendBtn"
-                class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <span>Kirim</span>
-                <i data-lucide="send" class="w-4 h-4"></i>
-            </button>
-        </form>
+                    <!-- Input Methods -->
+                    <div class="flex flex-col gap-3">
+                        <label class="cursor-pointer p-4 bg-slate-950 hover:bg-slate-900 border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl text-center flex flex-col items-center gap-2 transition group">
+                            <i data-lucide="file-audio" class="w-8 h-8 text-indigo-400 group-hover:scale-110 transition"></i>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-200">Klik / Tarik File Suara (.WAV, .MP3, .OGG)</p>
+                                <p class="text-[10px] text-slate-500">Mendekode gambar tersembunyi dalam spektrum audio secara instan</p>
+                            </div>
+                            <input type="file" id="audioDecoderFileInput" accept="audio/*" class="hidden" onchange="handleAudioToImageUpload(event)">
+                        </label>
+
+                        <div class="flex items-center justify-center gap-2 text-xs text-slate-500">
+                            <span>- ATAU -</span>
+                        </div>
+
+                        <!-- Mic Live Capture Button -->
+                        <button onclick="toggleMicrophoneWaterfall()" id="micWaterfallBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition">
+                            <i id="micWaterfallIcon" data-lucide="radio-tower" class="w-4 h-4"></i>
+                            <span id="micWaterfallText">Dengarkan Suara via Mikrofon (Real-Time)</span>
+                        </button>
+                    </div>
+
+                    <!-- Spectrogram Decoding Adjustments -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3 text-xs">
+                        <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            Pengaturan Tampilan Spektrogram
+                        </span>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-slate-400 text-[11px] block mb-1">Palet Warna:</label>
+                                <select id="spectrogramPalette" onchange="redrawDecodedImage()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200">
+                                    <option value="inferno">🔥 Inferno (Panas/Api)</option>
+                                    <option value="cyberpunk">🌆 Cyberpunk (Neon)</option>
+                                    <option value="viridis">🌿 Viridis (Teal/Kuning)</option>
+                                    <option value="crt_green">📟 Matrix CRT (Hijau)</option>
+                                    <option value="amber">📻 Amber Retro (Klasik)</option>
+                                    <option value="grayscale">⬛ Grayscale (B/W)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-slate-400 text-[11px] block mb-1">Resolusi FFT:</label>
+                                <select id="spectrogramFftSize" onchange="reprocessAudioIfAvailable()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200">
+                                    <option value="1024">1024 (Cepat / Responsif)</option>
+                                    <option value="2048" selected>2048 (Standar Tajam)</option>
+                                    <option value="4096">4096 (Ultra-HD Detail)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-slate-400 text-[11px] mb-1">
+                                <span>Sensitivitas / Kontras:</span>
+                                <span id="contrastVal" class="font-mono text-cyan-400">1.2x</span>
+                            </div>
+                            <input type="range" id="spectrogramContrast" min="0.5" max="3.0" step="0.1" value="1.2" class="w-full accent-cyan-400" oninput="document.getElementById('contrastVal').innerText = this.value + 'x'; redrawDecodedImage();">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Decoded Image Display Canvas -->
+                <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                                <i data-lucide="eye" class="w-4 h-4 text-cyan-400"></i>
+                                2. Hasil Gambar yang Dibuka Dari Suara
+                            </h3>
+                            <p class="text-[11px] text-slate-400">Gambar yang terkandung dalam frekuensi audio akan muncul di sini</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="captureWaterfallSnapshot()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition">
+                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                <span>Ambil Snapshot</span>
+                            </button>
+                            <button onclick="downloadDecodedImage()" id="btnDownloadDecodedImg" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Simpan Gambar (.PNG)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Decoded Display Canvas -->
+                    <div class="relative w-full aspect-[2/1] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                        <canvas id="decodedImageCanvas" width="600" height="300" class="w-full h-full object-contain"></canvas>
+                        <div id="decodedPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-500 pointer-events-none">
+                            <i data-lucide="waves" class="w-12 h-12 text-slate-700 mb-2"></i>
+                            <p class="text-sm font-semibold text-slate-400">Menunggu File Suara atau Sinyal Mikrofon...</p>
+                            <p class="text-xs text-slate-600 mt-1">Upload file audio hasil sintesis gambar atau putar suaranya di dekat mic untuk membuka gambar!</p>
+                        </div>
+                        <!-- Scanline Retro Effect -->
+                        <div class="absolute inset-0 scanline-overlay opacity-30"></div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span id="decoderStatusText">Status Dekoder: Siap</span>
+                        </div>
+                        <span id="audioTrackInfo" class="font-mono text-slate-500">Frekuensi terdeteksi: --</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================================= -->
+        <!-- TAB 2: VIDEO ⇄ SUARA (VIDEO <-> SOUND) -->
+        <!-- ========================================================================================= -->
+        <section id="section-video-sound" class="tab-content hidden flex flex-col gap-6">
+
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="video" class="w-6 h-6 text-cyan-400"></i>
+                        Konversi Video & Gelombang Suara
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Ekstrak audio asli dari sumber video, sonifikasi gerakan/warna visual video jadi suara, atau buat video dari suara.</p>
+                </div>
+                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button onclick="switchVideoSubtab('video-to-sound')" id="subtab-video-to-sound" class="subtab-btn active px-4 py-2 rounded-lg text-xs font-semibold transition">
+                        🎬 ➜ 🔊 Video Jadi Suara
+                    </button>
+                    <button onclick="switchVideoSubtab('sound-to-video')" id="subtab-sound-to-video" class="subtab-btn px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 transition">
+                        🔊 ➜ 🎬 Suara Jadi Video
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUBTAB 2.1: VIDEO -> SOUND (VIDEO TO SOUND & EXTRACTOR) -->
+            <div id="panel-video-to-sound" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Column: Video Input & Player -->
+                <div class="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i data-lucide="film" class="w-4 h-4 text-cyan-400"></i>
+                            1. Sumber Video
+                        </h3>
+                        <div class="flex gap-2">
+                            <label class="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                <span>Upload Video</span>
+                                <input type="file" id="videoFileInput" accept="video/*" class="hidden" onchange="handleVideoUpload(event)">
+                            </label>
+                            <button onclick="loadSampleVideoCanvas()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 transition">
+                                Video Sampel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Video / Canvas Screen -->
+                    <div class="relative w-full aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                        <video id="sourceVideo" class="w-full h-full object-contain" playsinline loop crossorigin="anonymous"></video>
+                        <canvas id="sampleVideoCanvas" class="hidden w-full h-full object-contain"></canvas>
+                        
+                        <div id="videoUploadPrompt" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-500 pointer-events-none">
+                            <i data-lucide="video" class="w-12 h-12 text-slate-700 mb-2"></i>
+                            <p class="text-sm font-semibold text-slate-300">Pilih / Upload File Video</p>
+                            <p class="text-xs text-slate-500 mt-1">Mendukung MP4, WebM, MOV. Audio bawaan dan visual gerakannya akan diproses jadi suara!</p>
+                        </div>
+                    </div>
+
+                    <!-- Video Controls Bar -->
+                    <div class="flex items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                        <div class="flex items-center gap-2">
+                            <button id="btnPlayVideo" onclick="toggleVideoPlayback()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">
+                                <i id="videoPlayIcon" data-lucide="play" class="w-4 h-4"></i>
+                            </button>
+                            <span id="videoTimeDisplay" class="font-mono text-slate-400 text-[11px]">00:00 / 00:00</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-slate-400">
+                            <span class="text-[11px]">Mode Audio:</span>
+                            <span id="videoAudioSourceBadge" class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px]">Asli + Sonifikasi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sound Extraction & Sonification -->
+                <div class="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+                        2. Pemrosesan Suara Dari Video
+                    </h3>
+
+                    <!-- Two Audio Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Option A: Ekstrak Audio Asli Bawaan Video -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold text-xs text-slate-200">A. Audio Asli Video</span>
+                                    <i data-lucide="disc" class="w-4 h-4 text-cyan-400"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-400">Mengekstrak track suara murni yang ada di dalam file video.</p>
+                            </div>
+                            <button id="btnExtractSourceAudio" onclick="extractSourceAudioFromVideo()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="file-audio" class="w-3.5 h-3.5"></i>
+                                <span>Ekstrak & Download WAV</span>
+                            </button>
+                        </div>
+
+                        <!-- Option B: Sonifikasi Visual Video (Motion & Colors to Sound) -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between gap-3">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold text-xs text-slate-200">B. Sonifikasi Visual Video</span>
+                                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-400">Ubah gerakan frame, kecerahan, & warna RGB video menjadi melodi suara.</p>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <button id="btnToggleSonifyVisuals" onclick="toggleVisualSonificationLive()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
+                                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+                                    <span id="sonifyVisualBtnText">Dengarkan Suara Visual</span>
+                                </button>
+                                <button onclick="renderVisualSonificationWav()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold rounded-lg text-[11px] flex items-center justify-center gap-1.5 transition">
+                                    <i data-lucide="download" class="w-3 h-3"></i>
+                                    <span>Download Suara Visual (.WAV)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Sonification Real-Time Metrics -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                        <span class="text-xs font-semibold text-slate-300">Analisis Frame & Nada Frekuensi Real-Time:</span>
+                        
+                        <div class="space-y-2 text-[11px]">
+                            <!-- Motion / Movement -->
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Gerakan Visual (Motion Delta ➜ Pitch Bend):</span>
+                                    <span id="metricMotion" class="font-mono text-cyan-300">0%</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="barMotion" class="h-full bg-cyan-400 w-0 transition-all duration-75"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Brightness / Luminance -->
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Kecerahan Frame (Luminance ➜ Filter Cutoff):</span>
+                                    <span id="metricBrightness" class="font-mono text-amber-300">0%</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="barBrightness" class="h-full bg-amber-400 w-0 transition-all duration-75"></div>
+                                </div>
+                            </div>
+
+                            <!-- RGB Balance -->
+                            <div>
+                                <div class="flex justify-between text-slate-400 mb-0.5">
+                                    <span>Spektrum Warna RGB (Harmoni Triad):</span>
+                                    <span id="metricRgb" class="font-mono text-slate-300">R:0 G:0 B:0</span>
+                                </div>
+                                <div class="w-full h-2 rounded-full overflow-hidden flex">
+                                    <div id="barR" class="bg-rose-500 w-1/3 transition-all"></div>
+                                    <div id="barG" class="bg-emerald-500 w-1/3 transition-all"></div>
+                                    <div id="barB" class="bg-blue-500 w-1/3 transition-all"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audio Player for Video Sound -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-semibold text-slate-300">Waveform Suara Video</span>
+                            <span id="videoAudioStatus" class="text-[10px] text-slate-500">Siap</span>
+                        </div>
+                        <div class="h-12 bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
+                            <canvas id="videoWaveformCanvas" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBTAB 2.2: SUARA -> VIDEO (SOUND TO VIDEO CREATOR) -->
+            <div id="panel-sound-to-video" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Column: Audio Source & Visualizer Settings -->
+                <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i>
+                        1. Sumber Suara & Generator Visual Video
+                    </h3>
+
+                    <!-- Sound Input -->
+                    <div class="flex flex-col gap-2">
+                        <label class="cursor-pointer px-4 py-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-xl text-xs flex items-center justify-between transition">
+                            <span class="text-slate-300 font-medium flex items-center gap-2">
+                                <i data-lucide="music" class="w-4 h-4 text-indigo-400"></i>
+                                Upload File Audio (.WAV, .MP3)
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-300 text-[10px]">Pilih File</span>
+                            <input type="file" id="soundToVideoFileInput" accept="audio/*" class="hidden" onchange="handleSoundToVideoAudioUpload(event)">
+                        </label>
+                        <button onclick="loadSampleMusicTrack()" class="px-3 py-2 bg-slate-950 hover:bg-slate-900 text-slate-300 rounded-xl border border-slate-800 text-xs text-left flex items-center justify-between transition">
+                            <span>🎵 Gunakan Sampel Musik Synthwave</span>
+                            <span class="text-[10px] text-cyan-400">Preset</span>
+                        </button>
+                    </div>
+
+                    <!-- Visualizer Theme Modes -->
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-medium">Model Visualisasi Suara ke Video:</label>
+                        <select id="videoVisualizerMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <option value="cymatics">🌊 Cymatics & Chladni Waves (Pola Frekuensi Geometri Simetris)</option>
+                            <option value="terrain3d">🏔️ 3D Spectral Terrain (Lembah Gelombang Wireframe)</option>
+                            <option value="lissajous">⚡ Laser Oscilloscope Lissajous (X-Y Vector Beam)</option>
+                            <option value="neon_quantum">⚛️ Neon Quantum Equalizer (Partikel & Cincin Hologram)</option>
+                        </select>
+                    </div>
+
+                    <!-- Video Recording Box -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3 mt-auto">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold text-slate-300">Perekam Video Hasil Suara</span>
+                            <span id="recordTimer" class="font-mono text-xs text-rose-400 font-bold">00:00</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btnRecordVideo" onclick="toggleVideoRecording()" class="py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow">
+                                <i id="recordVideoIcon" data-lucide="circle" class="w-3.5 h-3.5 fill-current"></i>
+                                <span id="recordVideoText">Mulai Rekam Video</span>
+                            </button>
+                            <button id="btnDownloadRecordedVideo" onclick="downloadRecordedVideoFile()" disabled class="py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download .WebM</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Real-Time Dynamic Video Canvas -->
+                <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i data-lucide="tv" class="w-4 h-4 text-cyan-400"></i>
+                            2. Tampilan Video Yang Dihasilkan Dari Suara
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <button id="btnPlaySoundToVideoAudio" onclick="toggleSoundToVideoPlayback()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i id="soundToVideoPlayIcon" data-lucide="play" class="w-3.5 h-3.5"></i>
+                                <span>Putar Suara</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Screen -->
+                    <div class="relative w-full aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                        <canvas id="soundToVideoCanvas" width="640" height="360" class="w-full h-full object-contain"></canvas>
+                        <div id="recordingIndicatorOverlay" class="hidden absolute top-3 right-3 flex items-center gap-2 bg-rose-950/80 border border-rose-700 text-rose-300 text-xs px-3 py-1 rounded-full animate-pulse">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>MEREKAM VIDEO DARI SUARA...</span>
+                        </div>
+                    </div>
+
+                    <!-- Video Playback & Download Player (If Recorded) -->
+                    <div id="recordedVideoContainer" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                        <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                            Video Berhasil Dibuat Dari Suara:
+                        </span>
+                        <video id="recordedVideoPreview" class="w-full aspect-video rounded-lg bg-black" controls></video>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================================= -->
+        <!-- TAB 3: SOUNDCHAT TEKS (ACOUSTIC TEXT CHAT MFSK) -->
+        <!-- ========================================================================================= -->
+        <section id="section-sound-chat" class="tab-content hidden flex flex-col gap-6">
+
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="radio" class="w-6 h-6 text-indigo-400"></i>
+                        SoundChat - Komunikasi Teks via Nada Suara (MFSK)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Kirim dan terima teks terenkripsi melalui modulasi multi-frekuensi suara speaker & mikrofon.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-slate-400">Kecepatan:</span>
+                    <select id="chatBaudRate" class="bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-200">
+                        <option value="60">⚡ Cepat (60ms/simbol)</option>
+                        <option value="90" selected>⚖️ Standar (90ms/simbol)</option>
+                        <option value="130">🛡️ Akurat (130ms/simbol)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Chat Feed Box -->
+                <div class="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4 min-h-[420px]">
+                    <!-- Chat History -->
+                    <div id="chatFeed" class="flex-1 overflow-y-auto max-h-[380px] flex flex-col gap-3 pr-2">
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 text-center mx-auto max-w-md">
+                            <i data-lucide="info" class="w-4 h-4 mx-auto mb-1 text-indigo-400"></i>
+                            Dekatkan mikrofon penerima ke speaker pengirim. Pesan dikirim melalui modulasi frekuensi akustik MFSK.
+                        </div>
+                    </div>
+
+                    <!-- Quick Message Buttons -->
+                    <div class="flex gap-2 overflow-x-auto pb-1 text-xs">
+                        <span class="text-slate-500 py-1 font-medium whitespace-nowrap">Pesan Cepat:</span>
+                        <button onclick="setQuickChatMessage('Halo Dunia!')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 rounded-md border border-slate-800 text-slate-300 whitespace-nowrap transition">👋 Halo Dunia!</button>
+                        <button onclick="setQuickChatMessage('Gelombang Suara Aktif')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 rounded-md border border-slate-800 text-slate-300 whitespace-nowrap transition">🔊 Gelombang Aktif</button>
+                        <button onclick="setQuickChatMessage('Sinyal Diterima 100%')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 rounded-md border border-slate-800 text-slate-300 whitespace-nowrap transition">✅ Sinyal Diterima</button>
+                    </div>
+
+                    <!-- Chat Input Form -->
+                    <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex gap-2 items-center">
+                        <input 
+                            type="text" 
+                            id="chatInputMessage" 
+                            placeholder="Ketik pesan untuk dipancarkan sebagai suara..." 
+                            maxlength="60"
+                            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                            required 
+                            autocomplete="off"
+                        />
+                        <button 
+                            type="submit" 
+                            id="btnSendChat"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+                        >
+                            <span>Pancarkan</span>
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Side: Transceiver Monitor & Export -->
+                <div class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                        Monitor Sinyal Akustik
+                    </h3>
+
+                    <!-- Status Display -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Status Sinyal:</span>
+                            <span id="chatSignalStatus" class="font-mono text-emerald-400 font-semibold">Siap</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Simbol Diterima:</span>
+                            <span id="chatReceivedSymbol" class="font-mono text-cyan-400 font-bold">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Export / Import Chat as Audio File -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                        <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i data-lucide="file-audio" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            Ekspor / Impor File Suara Pesan
+                        </span>
+                        <p class="text-[11px] text-slate-500">Anda bisa mengunduh pesan teks sebagai file suara .WAV atau mendekode file suara pesan secara offline.</p>
+                        
+                        <div class="flex flex-col gap-2">
+                            <button onclick="exportLastChatAsWav()" id="btnExportChatWav" disabled class="py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download WAV Pesan Terakhir</span>
+                            </button>
+                            <label class="cursor-pointer py-2 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                <span>Dekode File Audio Pesan</span>
+                                <input type="file" id="chatAudioFileInput" accept="audio/*" class="hidden" onchange="handleChatAudioFileUpload(event)">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================================= -->
+        <!-- TAB 4: LAB SPEKTROGRAM & FFT (LIVE WATERFALL & ANALYZER) -->
+        <!-- ========================================================================================= -->
+        <section id="section-spectrogram-lab" class="tab-content hidden flex flex-col gap-6">
+
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="waves" class="w-6 h-6 text-indigo-400"></i>
+                        Studio Spektrogram Air Terjun & Generator Nada
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Analisis visual spektrum frekuensi audio 2D resolusi tinggi secara real-time dan generator gelombang uji.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <button onclick="toggleGlobalMicrophone()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow transition">
+                        Toggle Mikrofon
+                    </button>
+                </div>
+            </div>
+
+            <!-- Big Waterfall Spectrogram Canvas -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                        <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i>
+                        Spektrogram Air Terjun (Real-Time Waterfall Spectrum)
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="text-slate-400">Skala Frekuensi: <span class="font-mono text-cyan-300">0 Hz - 22.05 kHz</span></span>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-80 bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                    <canvas id="labWaterfallCanvas" width="900" height="350" class="w-full h-full object-fill"></canvas>
+                    <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300">
+                        Peak Freq: <span id="labPeakFreq" class="text-cyan-400 font-bold">0 Hz</span>
+                    </div>
+                </div>
+
+                <!-- Test Tone Generator Tools -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+                    <div>
+                        <span class="font-semibold text-slate-300 block mb-2">Generator Nada Uji (Tone Test):</span>
+                        <div class="flex gap-2">
+                            <button onclick="playLabTone(440, 'sine')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg">440Hz (A4)</button>
+                            <button onclick="playLabTone(1000, 'sine')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg">1000Hz</button>
+                            <button onclick="playLabTone(4000, 'sine')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg">4000Hz</button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-300 block mb-2">Chirp Sweep (Sapu Frekuensi):</span>
+                        <div class="flex gap-2">
+                            <button onclick="playLabChirp(200, 8000, 2.0)" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">Linear Chirp (2s)</button>
+                            <button onclick="playLabChirp(500, 15000, 3.0)" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg">Hi-Chirp (3s)</button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-300 block mb-2">Noise Generator:</span>
+                        <div class="flex gap-2">
+                            <button onclick="playLabNoise('white', 2.0)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg">White Noise</button>
+                            <button onclick="playLabNoise('pink', 2.0)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg">Pink Noise</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
 
     </main>
 
+    <!-- Global Floating Audio Controller / Player -->
+    <div id="globalAudioPlayerBar" class="hidden bg-slate-900/95 backdrop-blur border-t border-slate-800 p-3 sticky bottom-0 z-50 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div class="flex items-center gap-3">
+                <button id="globalPlayPauseBtn" onclick="toggleGlobalAudioPlayPause()" class="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition shadow">
+                    <i id="globalPlayPauseIcon" data-lucide="pause" class="w-4 h-4"></i>
+                </button>
+                <div>
+                    <div id="globalAudioTitle" class="font-semibold text-slate-200">Memutar Suara Gambar / Video...</div>
+                    <div id="globalAudioTime" class="text-[10px] font-mono text-slate-400">00:00 / 00:00</div>
+                </div>
+            </div>
+            <div class="flex-1 max-w-md hidden sm:block">
+                <input type="range" id="globalAudioSeek" min="0" max="100" value="0" class="w-full accent-indigo-500 h-1.5">
+            </div>
+            <button onclick="stopGlobalAudio()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg border border-slate-700">
+                Tutup
+            </button>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <footer class="text-center py-3 text-xs text-slate-500 border-t border-slate-800">
-        SoundChat &copy; 2026 - Pengirim & Penerima Sinkron via Acoustic Frequency Shift Keying (MFSK)
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-900 bg-slate-950">
+        Gelombang Suara Studio &copy; 2026 - Acoustic Frequency Synthesis, Image/Video Sonification & Audio Visualizer
     </footer>
 
-    <!-- Application Script -->
+    <!-- ========================================================================================= -->
+    <!-- JAVASCRIPT LOGIC ENGINE -->
+    <!-- ========================================================================================= -->
     <script>
-        // --- INI SCRIPT MODULASI & DEMODULASI GELOMBANG SUARA ---
-
-        // Konfigurasi Frekuensi Audio
-        const FREQ_START = 800;   // Tone awal paket (Preamble)
-        const FREQ_END = 2400;   // Tone akhir paket (Postamble)
-        const FREQ_BASE = 1000;  // Base frekuensi data Hex
-        const FREQ_STEP = 80;    // Jarak interval frekuensi tiap simbol hex (0-F)
-        const SYMBOL_DURATION = 90; // Durasi per nada dalam milidetik (ms)
-        const SILENCE_GAP = 20;     // Jeda diam antar nada (ms)
-
-        // Web Audio Context
+        // ==========================================
+        // 1. CORE AUDIO SYSTEM & GLOBAL STATE
+        // ==========================================
         let audioCtx = null;
-        let micStream = null;
-        let analyser = null;
-        let isReceiving = false;
-        let rxInterval = null;
+        let masterGain = null;
+        let globalMicStream = null;
+        let globalMicSource = null;
+        let globalAnalyser = null;
+        let isGlobalMicActive = false;
 
-        // Buffers & State Receiver
-        let rxBuffer = [];
-        let rxState = 'IDLE'; // IDLE, RECEIVING
-        let lastHexSymbol = null;
-        let sameSymbolCount = 0;
+        // Current active audio buffer playing
+        let currentPlayingSource = null;
+        let currentPlayingBuffer = null;
+        let currentAudioStartTime = 0;
+        let globalAudioInterval = null;
 
-        // Element DOM
-        const chatBox = document.getElementById('chatBox');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const toggleMicBtn = document.getElementById('toggleMicBtn');
-        const micIcon = document.getElementById('micIcon');
-        const micStatusText = document.getElementById('micStatusText');
-        const statusText = document.getElementById('statusText');
-        const statusDot = document.getElementById('statusDot');
-        const txRxIndicator = document.getElementById('txRxIndicator');
-        const visualizer = document.getElementById('visualizer');
-        const canvasCtx = visualizer.getContext('2d');
+        // Uploaded video file reference
+        let uploadedVideoFile = null;
 
-        // Inisialisasi Lucide Icons
-        lucide.createIcons();
+        // Color Palettes for Spectrogram
+        const COLOR_PALETTES = {
+            inferno: (val) => {
+                const v = Math.min(1, Math.max(0, val));
+                const r = Math.min(255, Math.floor(v < 0.3 ? v * 3 * 180 : (v < 0.7 ? 180 + (v - 0.3) * 2.5 * 75 : 255)));
+                const g = Math.min(255, Math.floor(v < 0.4 ? 0 : (v < 0.8 ? (v - 0.4) * 2.5 * 200 : 200 + (v - 0.8) * 5 * 55)));
+                const b = Math.min(255, Math.floor(v < 0.2 ? v * 5 * 120 : (v < 0.6 ? 120 - (v - 0.2) * 2.5 * 120 : (v - 0.6) * 2.5 * 255)));
+                return [r, g, b];
+            },
+            cyberpunk: (val) => {
+                const v = Math.min(1, Math.max(0, val));
+                const r = Math.floor(v * 240);
+                const g = Math.floor(Math.sin(v * Math.PI) * 220);
+                const b = Math.floor(255 * Math.pow(v, 0.5));
+                return [r, g, b];
+            },
+            viridis: (val) => {
+                const v = Math.min(1, Math.max(0, val));
+                const r = Math.floor(v < 0.5 ? 68 + v * 2 * 30 : 98 + (v - 0.5) * 2 * 157);
+                const g = Math.floor(v < 0.5 ? 1 + v * 2 * 140 : 141 + (v - 0.5) * 2 * 114);
+                const b = Math.floor(v < 0.5 ? 84 + v * 2 * 60 : 144 - (v - 0.5) * 2 * 100);
+                return [r, g, b];
+            },
+            crt_green: (val) => {
+                const v = Math.min(1, Math.max(0, val));
+                return [Math.floor(v * 40), Math.floor(v * 255), Math.floor(v * 60)];
+            },
+            amber: (val) => {
+                const v = Math.min(1, Math.max(0, val));
+                return [Math.floor(v * 255), Math.floor(v * 180), Math.floor(v * 20)];
+            },
+            grayscale: (val) => {
+                const v = Math.floor(Math.min(1, Math.max(0, val)) * 255);
+                return [v, v, v];
+            }
+        };
 
-        // Helper Audio Context Lazy Init
         function getAudioContext() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.setValueAtTime(0.9, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+
+                globalAnalyser = audioCtx.createAnalyser();
+                globalAnalyser.fftSize = 2048;
+                globalAnalyser.smoothingTimeConstant = 0.3;
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -164,25 +970,1384 @@
             return audioCtx;
         }
 
-        // --- MENGIRIM PESAN (TRANSMITTER / PENGIRIM) ---
-        async function sendMessage(event) {
-            event.preventDefault();
-            const text = messageInput.value.trim();
+        // WAV Encoder (16-bit PCM Mono / Stereo)
+        function encodeWAV(samplesL, samplesR = null, sampleRate = 44100) {
+            const numChannels = samplesR ? 2 : 1;
+            const length = samplesL.length;
+            const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+            const view = new DataView(buffer);
+
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + length * numChannels * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, length * numChannels * 2, true);
+
+            let offset = 44;
+            if (numChannels === 1) {
+                for (let i = 0; i < length; i++, offset += 2) {
+                    const s = Math.max(-1, Math.min(1, samplesL[i]));
+                    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                }
+            } else {
+                for (let i = 0; i < length; i++) {
+                    let sl = Math.max(-1, Math.min(1, samplesL[i]));
+                    view.setInt16(offset, sl < 0 ? sl * 0x8000 : sl * 0x7FFF, true);
+                    offset += 2;
+                    let sr = Math.max(-1, Math.min(1, samplesR[i]));
+                    view.setInt16(offset, sr < 0 ? sr * 0x8000 : sr * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        // Fast In-Memory FFT Implementation
+        function complexFFT(real, imag) {
+            const n = real.length;
+            let j = 0;
+            for (let i = 0; i < n - 1; i++) {
+                if (i < j) {
+                    let tempR = real[i]; real[i] = real[j]; real[j] = tempR;
+                    let tempI = imag[i]; imag[i] = imag[j]; imag[j] = tempI;
+                }
+                let k = n >> 1;
+                while (k <= j) {
+                    j -= k;
+                    k >>= 1;
+                }
+                j += k;
+            }
+            for (let l = 2; l <= n; l <<= 1) {
+                const halfL = l >> 1;
+                const angle = -2 * Math.PI / l;
+                const cosAngle = Math.cos(angle);
+                const sinAngle = Math.sin(angle);
+                for (let i = 0; i < n; i += l) {
+                    let wr = 1, wi = 0;
+                    for (let k = 0; k < halfL; k++) {
+                        const tr = wr * real[i + k + halfL] - wi * imag[i + k + halfL];
+                        const ti = wr * imag[i + k + halfL] + wi * real[i + k + halfL];
+                        real[i + k + halfL] = real[i + k] - tr;
+                        imag[i + k + halfL] = imag[i + k] - ti;
+                        real[i + k] += tr;
+                        imag[i + k] += ti;
+                        const nextWr = wr * cosAngle - wi * sinAngle;
+                        wi = wr * sinAngle + wi * cosAngle;
+                        wr = nextWr;
+                    }
+                }
+            }
+        }
+
+        // Global Microphone Activation
+        async function toggleGlobalMicrophone() {
+            const btn = document.getElementById('masterMicBtn');
+            const icon = document.getElementById('masterMicIcon');
+            const label = document.getElementById('masterMicLabel');
+            const statusDot = document.getElementById('globalStatusDot');
+            const statusText = document.getElementById('globalStatusText');
+
+            if (isGlobalMicActive) {
+                if (globalMicStream) {
+                    globalMicStream.getTracks().forEach(t => t.stop());
+                    globalMicStream = null;
+                }
+                isGlobalMicActive = false;
+                label.innerText = 'Aktifkan Mikrofon';
+                btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700";
+                icon.setAttribute('data-lucide', 'mic-off');
+                statusText.innerText = 'Mikrofon Standby';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+                lucide.createIcons();
+            } else {
+                try {
+                    const ctx = getAudioContext();
+                    globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    globalMicSource = ctx.createMediaStreamSource(globalMicStream);
+                    globalMicSource.connect(globalAnalyser);
+                    
+                    isGlobalMicActive = true;
+                    label.innerText = 'Mikrofon Aktif';
+                    btn.className = "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400";
+                    icon.setAttribute('data-lucide', 'mic');
+                    statusText.innerText = 'Mikrofon Mendengarkan...';
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping';
+                    lucide.createIcons();
+
+                    // Start visualizers loop
+                    startVisualizersLoop();
+                } catch (err) {
+                    console.error('Gagal akses mic:', err);
+                    alert('Tidak dapat mengakses mikrofon. Pastikan Anda mengizinkan akses mikrofon di browser.');
+                }
+            }
+        }
+
+        // Navigation Tabs Handler
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+            const activeBtn = document.getElementById('tab-' + tabId);
+            const activeSection = document.getElementById('section-' + tabId);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (activeSection) activeSection.classList.remove('hidden');
+
+            lucide.createIcons();
+        }
+
+        function switchImgSubtab(subtabId) {
+            document.querySelectorAll('#section-img-sound .subtab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('subtab-' + subtabId).classList.add('active');
+
+            if (subtabId === 'img-to-sound') {
+                document.getElementById('panel-img-to-sound').classList.remove('hidden');
+                document.getElementById('panel-sound-to-img').classList.add('hidden');
+            } else {
+                document.getElementById('panel-img-to-sound').classList.add('hidden');
+                document.getElementById('panel-sound-to-img').classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        function switchVideoSubtab(subtabId) {
+            document.querySelectorAll('#section-video-sound .subtab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('subtab-' + subtabId).classList.add('active');
+
+            if (subtabId === 'video-to-sound') {
+                document.getElementById('panel-video-to-sound').classList.remove('hidden');
+                document.getElementById('panel-sound-to-video').classList.add('hidden');
+            } else {
+                document.getElementById('panel-video-to-sound').classList.add('hidden');
+                document.getElementById('panel-sound-to-video').classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+
+        // ==========================================
+        // 2. IMAGE TO SOUND (SONIFIKASI GAMBAR)
+        // ==========================================
+        const sourceImageCanvas = document.getElementById('sourceImageCanvas');
+        const sourceImgCtx = sourceImageCanvas.getContext('2d', { willReadFrequently: true });
+        let isDrawing = false;
+        let drawTool = 'pen';
+        let generatedImageAudioBlob = null;
+        let generatedImageAudioBuffer = null;
+
+        // Initialize Canvas with default drawing
+        function initDrawingCanvas() {
+            sourceImgCtx.fillStyle = '#050811';
+            sourceImgCtx.fillRect(0, 0, sourceImageCanvas.width, sourceImageCanvas.height);
+            loadPresetImage('soundchat');
+        }
+
+        function setDrawTool(tool) {
+            drawTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.className = 'p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-md tool-btn';
+            });
+            const activeBtn = document.getElementById('tool-' + tool);
+            if (activeBtn) activeBtn.className = 'p-1.5 bg-indigo-600 text-white rounded-md tool-btn';
+        }
+
+        function clearImageCanvas() {
+            sourceImgCtx.fillStyle = '#050811';
+            sourceImgCtx.fillRect(0, 0, sourceImageCanvas.width, sourceImageCanvas.height);
+        }
+
+        // Mouse & Touch Drawing Events
+        function getCanvasCoords(e) {
+            const rect = sourceImageCanvas.getBoundingClientRect();
+            const scaleX = sourceImageCanvas.width / rect.width;
+            const scaleY = sourceImageCanvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const coords = getCanvasCoords(e);
+            const size = parseInt(document.getElementById('brushSize').value) || 6;
+
+            sourceImgCtx.lineWidth = size;
+            sourceImgCtx.lineCap = 'round';
+            sourceImgCtx.lineJoin = 'round';
+
+            if (drawTool === 'pen') {
+                sourceImgCtx.strokeStyle = '#ffffff';
+                sourceImgCtx.fillStyle = '#ffffff';
+            } else {
+                sourceImgCtx.strokeStyle = '#050811';
+                sourceImgCtx.fillStyle = '#050811';
+            }
+
+            sourceImgCtx.lineTo(coords.x, coords.y);
+            sourceImgCtx.stroke();
+            sourceImgCtx.beginPath();
+            sourceImgCtx.moveTo(coords.x, coords.y);
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+            sourceImgCtx.beginPath();
+        }
+
+        sourceImageCanvas.addEventListener('mousedown', startDraw);
+        sourceImageCanvas.addEventListener('mousemove', draw);
+        sourceImageCanvas.addEventListener('mouseup', stopDraw);
+        sourceImageCanvas.addEventListener('mouseleave', stopDraw);
+        sourceImageCanvas.addEventListener('touchstart', startDraw);
+        sourceImageCanvas.addEventListener('touchmove', draw);
+        sourceImageCanvas.addEventListener('touchend', stopDraw);
+
+        function drawTextOnCanvas() {
+            const text = document.getElementById('drawTextInput').value.trim();
             if (!text) return;
+            sourceImgCtx.font = 'bold 36px sans-serif';
+            sourceImgCtx.fillStyle = '#ffffff';
+            sourceImgCtx.textAlign = 'center';
+            sourceImgCtx.textBaseline = 'middle';
+            sourceImgCtx.fillText(text, sourceImageCanvas.width / 2, sourceImageCanvas.height / 2);
+            document.getElementById('drawTextInput').value = '';
+        }
+
+        // Upload custom image
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    sourceImgCtx.fillStyle = '#050811';
+                    sourceImgCtx.fillRect(0, 0, sourceImageCanvas.width, sourceImageCanvas.height);
+                    
+                    // Fit image proportionally
+                    const hRatio = sourceImageCanvas.width / img.width;
+                    const vRatio = sourceImageCanvas.height / img.height;
+                    const ratio = Math.min(hRatio, vRatio);
+                    const centerShiftX = (sourceImageCanvas.width - img.width * ratio) / 2;
+                    const centerShiftY = (sourceImageCanvas.height - img.height * ratio) / 2;
+                    
+                    sourceImgCtx.drawImage(img, 0, 0, img.width, img.height,
+                                          centerShiftX, centerShiftY, img.width * ratio, img.height * ratio);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Preset Sample Images
+        function loadPresetImage(preset) {
+            clearImageCanvas();
+            const w = sourceImageCanvas.width;
+            const h = sourceImageCanvas.height;
+
+            if (preset === 'soundchat') {
+                sourceImgCtx.strokeStyle = '#38bdf8';
+                sourceImgCtx.lineWidth = 4;
+                // Draw radio tower and signal waves
+                sourceImgCtx.beginPath();
+                sourceImgCtx.arc(w / 2, h / 2, 35, 0, Math.PI * 2);
+                sourceImgCtx.stroke();
+
+                sourceImgCtx.font = 'bold 28px sans-serif';
+                sourceImgCtx.fillStyle = '#ffffff';
+                sourceImgCtx.textAlign = 'center';
+                sourceImgCtx.textBaseline = 'middle';
+                sourceImgCtx.fillText('SOUNDCHAT', w / 2, h / 2);
+
+                // Wave lines
+                for (let i = 0; i < 4; i++) {
+                    sourceImgCtx.beginPath();
+                    sourceImgCtx.arc(w / 2, h / 2, 50 + i * 15, -Math.PI * 0.4, Math.PI * 0.4);
+                    sourceImgCtx.stroke();
+                    sourceImgCtx.beginPath();
+                    sourceImgCtx.arc(w / 2, h / 2, 50 + i * 15, Math.PI * 0.6, Math.PI * 1.4);
+                    sourceImgCtx.stroke();
+                }
+            } else if (preset === 'cat') {
+                sourceImgCtx.fillStyle = '#ffffff';
+                sourceImgCtx.strokeStyle = '#ffffff';
+                sourceImgCtx.lineWidth = 4;
+                // Face
+                sourceImgCtx.beginPath();
+                sourceImgCtx.arc(w / 2, h / 2 + 10, 40, 0, Math.PI * 2);
+                sourceImgCtx.stroke();
+                // Ears
+                sourceImgCtx.beginPath();
+                sourceImgCtx.moveTo(w / 2 - 35, h / 2 - 15);
+                sourceImgCtx.lineTo(w / 2 - 40, h / 2 - 55);
+                sourceImgCtx.lineTo(w / 2 - 10, h / 2 - 25);
+                sourceImgCtx.fill();
+                sourceImgCtx.beginPath();
+                sourceImgCtx.moveTo(w / 2 + 35, h / 2 - 15);
+                sourceImgCtx.lineTo(w / 2 + 40, h / 2 - 55);
+                sourceImgCtx.lineTo(w / 2 + 10, h / 2 - 25);
+                sourceImgCtx.fill();
+                // Eyes & Whiskers
+                sourceImgCtx.beginPath();
+                sourceImgCtx.arc(w / 2 - 15, h / 2 + 5, 5, 0, Math.PI * 2);
+                sourceImgCtx.arc(w / 2 + 15, h / 2 + 5, 5, 0, Math.PI * 2);
+                sourceImgCtx.fill();
+                sourceImgCtx.font = 'bold 16px sans-serif';
+                sourceImgCtx.fillText('(=^･ω･^=)', w / 2, h / 2 + 25);
+            } else if (preset === 'music') {
+                sourceImgCtx.fillStyle = '#38bdf8';
+                sourceImgCtx.font = 'bold 70px serif';
+                sourceImgCtx.textAlign = 'center';
+                sourceImgCtx.textBaseline = 'middle';
+                sourceImgCtx.fillText('𝄞 𝅘𝅥𝅯 𝅘𝅥𝅮 𝅘𝅥𝅲', w / 2, h / 2);
+            } else if (preset === 'secret') {
+                sourceImgCtx.fillStyle = '#ffffff';
+                sourceImgCtx.font = 'bold 32px monospace';
+                sourceImgCtx.textAlign = 'center';
+                sourceImgCtx.textBaseline = 'middle';
+                sourceImgCtx.fillText('★ AUDIO-SECRET ★', w / 2, h / 2 - 15);
+                sourceImgCtx.font = '20px monospace';
+                sourceImgCtx.fillStyle = '#38bdf8';
+                sourceImgCtx.fillText('GELOMBANG SUARA 2026', w / 2, h / 2 + 25);
+            } else if (preset === 'galaxy') {
+                sourceImgCtx.strokeStyle = '#ffffff';
+                sourceImgCtx.lineWidth = 3;
+                for (let a = 0; a < Math.PI * 4; a += 0.1) {
+                    const r = a * 12;
+                    const x = w / 2 + Math.cos(a) * r;
+                    const y = h / 2 + Math.sin(a) * (r * 0.6);
+                    sourceImgCtx.fillRect(x, y, 3, 3);
+                }
+            }
+        }
+
+        // Sintesis Gambar Menjadi Suara (Image to Audio Synthesizer)
+        async function synthesizeImageToAudio() {
+            const btn = document.getElementById('btnSynthesizeImg');
+            const statusBadge = document.getElementById('synthStatusBadge');
+            const dur = parseFloat(document.getElementById('soundDuration').value) || 4.0;
+            const method = document.getElementById('sonifyMethod').value;
+            const freqRange = document.getElementById('freqRangeSelect').value.split('-').map(Number);
+            const fMin = freqRange[0];
+            const fMax = freqRange[1];
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Memproses Spektrum...</span>`;
+            lucide.createIcons();
+            statusBadge.innerText = 'Sintesis Berjalan...';
+            statusBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800';
+
+            // Give UI a chance to render spinner
+            await new Promise(r => setTimeout(r, 50));
+
+            const sampleRate = 44100;
+            let leftChannel, rightChannel;
+
+            if (method === 'sstv_fast') {
+                // SSTV Line-by-Line Scan Frequency Modulation Synthesizer
+                const numLines = 64;
+                const cols = 120;
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = cols;
+                tempCanvas.height = numLines;
+                const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+                tempCtx.drawImage(sourceImageCanvas, 0, 0, cols, numLines);
+                const imgData = tempCtx.getImageData(0, 0, cols, numLines).data;
+
+                const lineDuration = dur / numLines; // seconds per line
+                const syncDuration = lineDuration * 0.15;
+                const scanDuration = lineDuration * 0.85;
+                const totalSamples = Math.floor(dur * sampleRate);
+                leftChannel = new Float32Array(totalSamples);
+                rightChannel = new Float32Array(totalSamples);
+
+                let phase = 0;
+                let sampleIdx = 0;
+
+                // Leader tone 1900Hz
+                for (let line = 0; line < numLines && sampleIdx < totalSamples; line++) {
+                    // Sync pulse: 1200Hz
+                    const syncSamples = Math.floor(syncDuration * sampleRate);
+                    for (let s = 0; s < syncSamples && sampleIdx < totalSamples; s++) {
+                        phase += (2 * Math.PI * 1200) / sampleRate;
+                        const v = Math.sin(phase) * 0.8;
+                        leftChannel[sampleIdx] = v;
+                        rightChannel[sampleIdx] = v;
+                        sampleIdx++;
+                    }
+
+                    // Pixel Scanline: FM from 1500Hz (black) to 2300Hz (white)
+                    const scanSamples = Math.floor(scanDuration * sampleRate);
+                    for (let s = 0; s < scanSamples && sampleIdx < totalSamples; s++) {
+                        const col = Math.min(cols - 1, Math.floor((s / scanSamples) * cols));
+                        const pIdx = (line * cols + col) * 4;
+                        const lum = (0.299 * imgData[pIdx] + 0.587 * imgData[pIdx + 1] + 0.114 * imgData[pIdx + 2]) / 255.0;
+                        const freq = 1500 + lum * 800; // 1500Hz - 2300Hz FM
+                        phase += (2 * Math.PI * freq) / sampleRate;
+                        const v = Math.sin(phase) * 0.8;
+                        leftChannel[sampleIdx] = v;
+                        rightChannel[sampleIdx] = v;
+                        sampleIdx++;
+                    }
+                }
+            } else {
+                // Visual Spectrogram Additive Synthesizer (Spectrogram waterfall)
+                const totalSamples = Math.floor(dur * sampleRate);
+                const cols = 200;
+                const rows = 72;
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = cols;
+                tempCanvas.height = rows;
+                const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+                tempCtx.drawImage(sourceImageCanvas, 0, 0, cols, rows);
+                const imgData = tempCtx.getImageData(0, 0, cols, rows).data;
+
+                leftChannel = new Float32Array(totalSamples);
+                rightChannel = new Float32Array(totalSamples);
+
+                const freqs = new Float32Array(rows);
+                const phaseSteps = new Float32Array(rows);
+                const phasesL = new Float32Array(rows);
+                const phasesR = new Float32Array(rows);
+
+                for (let y = 0; y < rows; y++) {
+                    const ratio = (rows - 1 - y) / (rows - 1);
+                    const freq = fMin * Math.pow(fMax / fMin, ratio);
+                    freqs[y] = freq;
+                    phaseSteps[y] = (2 * Math.PI * freq) / sampleRate;
+                    phasesL[y] = Math.random() * Math.PI * 2;
+                    phasesR[y] = Math.random() * Math.PI * 2;
+                }
+
+                for (let i = 0; i < totalSamples; i++) {
+                    const col = Math.min(cols - 1, Math.floor((i / totalSamples) * cols));
+                    let sumL = 0;
+                    let sumR = 0;
+
+                    for (let y = 0; y < rows; y++) {
+                        phasesL[y] += phaseSteps[y];
+                        if (phasesL[y] > 6.2831853) phasesL[y] -= 6.2831853;
+                        phasesR[y] += phaseSteps[y];
+                        if (phasesR[y] > 6.2831853) phasesR[y] -= 6.2831853;
+
+                        const pIndex = (y * cols + col) * 4;
+                        const r = imgData[pIndex] / 255.0;
+                        const g = imgData[pIndex + 1] / 255.0;
+                        const b = imgData[pIndex + 2] / 255.0;
+                        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        if (lum > 0.02) {
+                            if (method === 'chroma_stereo') {
+                                sumL += (lum * 0.7 + r * 0.3) * Math.sin(phasesL[y]);
+                                sumR += (lum * 0.7 + b * 0.3) * Math.sin(phasesR[y]);
+                            } else {
+                                const val = lum * Math.sin(phasesL[y]);
+                                sumL += val;
+                                sumR += val;
+                            }
+                        }
+                    }
+                    leftChannel[i] = sumL;
+                    rightChannel[i] = sumR;
+                }
+            }
+
+            const totalSamples = leftChannel.length;
+            // Smooth fade-in & fade-out to prevent clicks
+            const fadeSamples = Math.floor(sampleRate * 0.02);
+            for (let i = 0; i < fadeSamples; i++) {
+                const gain = i / fadeSamples;
+                leftChannel[i] *= gain;
+                rightChannel[i] *= gain;
+                leftChannel[totalSamples - 1 - i] *= gain;
+                rightChannel[totalSamples - 1 - i] *= gain;
+            }
+
+            // Normalization
+            let maxAmp = 0;
+            for (let i = 0; i < totalSamples; i++) {
+                const aL = Math.abs(leftChannel[i]);
+                const aR = Math.abs(rightChannel[i]);
+                if (aL > maxAmp) maxAmp = aL;
+                if (aR > maxAmp) maxAmp = aR;
+            }
+            if (maxAmp > 0) {
+                const normFactor = 0.95 / maxAmp;
+                for (let i = 0; i < totalSamples; i++) {
+                    leftChannel[i] *= normFactor;
+                    rightChannel[i] *= normFactor;
+                }
+            }
+
+            // Create AudioBuffer & WAV Blob
+            const ctx = getAudioContext();
+            generatedImageAudioBuffer = ctx.createBuffer(2, totalSamples, sampleRate);
+            generatedImageAudioBuffer.getChannelData(0).set(leftChannel);
+            generatedImageAudioBuffer.getChannelData(1).set(rightChannel);
+
+            generatedImageAudioBlob = encodeWAV(leftChannel, rightChannel, sampleRate);
+
+            // Draw synthesized waveform preview
+            drawWaveformOnCanvas('synthWaveformCanvas', leftChannel);
+
+            // Enable action buttons
+            document.getElementById('btnPlayImgAudio').disabled = false;
+            document.getElementById('btnDownloadImgWav').disabled = false;
+
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i><span>Sintesis Ulang Gambar</span>`;
+            statusBadge.innerText = 'Siap Diputar (' + dur + 's)';
+            statusBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800';
+            lucide.createIcons();
+        }
+
+        function playGeneratedImageAudio() {
+            if (!generatedImageAudioBuffer) return;
+            playAudioBuffer(generatedImageAudioBuffer, 'Gambar Terenkode Audio (Spektrogram/SSTV)');
+        }
+
+        function downloadImageWav() {
+            if (!generatedImageAudioBlob) return;
+            const url = URL.createObjectURL(generatedImageAudioBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gambar-suara-${Date.now()}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function drawWaveformOnCanvas(canvasId, channelData) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth || 300;
+            canvas.height = canvas.clientHeight || 50;
+
+            ctx.fillStyle = '#050811';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+
+            const step = Math.ceil(channelData.length / canvas.width);
+            const mid = canvas.height / 2;
+
+            for (let i = 0; i < canvas.width; i++) {
+                let min = 1.0;
+                let max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = channelData[i * step + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * mid);
+                ctx.lineTo(i, (1 + max) * mid);
+            }
+            ctx.stroke();
+        }
+
+
+        // ==========================================
+        // 3. SOUND TO IMAGE (BUKA GAMBAR DARI SUARA)
+        // ==========================================
+        let decodedImageCanvas = document.getElementById('decodedImageCanvas');
+        let decodedImgCtx = decodedImageCanvas.getContext('2d', { willReadFrequently: true });
+        let decodedAudioBufferData = null;
+        let waterfallMicActive = false;
+
+        // Handle Audio File Upload for Decoding
+        async function handleAudioToImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const decoderStatus = document.getElementById('decoderStatusText');
+            decoderStatus.innerText = 'Status: Membaca & Mendekode Spektrum Audio...';
+            document.getElementById('decodedPlaceholder').classList.add('hidden');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const ctx = getAudioContext();
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                decodedAudioBufferData = audioBuffer;
+                
+                // Process audio to image
+                renderSpectrogramFromAudioBuffer(audioBuffer);
+                decoderStatus.innerText = 'Status: Gambar Berhasil Dibuka dari File Audio!';
+            } catch (err) {
+                console.error('Gagal mendekode audio:', err);
+                alert('Gagal membaca file audio. Pastikan file format didukung (.wav, .mp3, .ogg).');
+                decoderStatus.innerText = 'Status: Gagal membuka audio.';
+            }
+        }
+
+        // Decode audio buffer into image on canvas using sliding FFT
+        function renderSpectrogramFromAudioBuffer(audioBuffer) {
+            const paletteName = document.getElementById('spectrogramPalette').value || 'inferno';
+            const colorFn = COLOR_PALETTES[paletteName] || COLOR_PALETTES.inferno;
+            const fftSize = parseInt(document.getElementById('spectrogramFftSize').value) || 2048;
+            const contrast = parseFloat(document.getElementById('spectrogramContrast').value) || 1.2;
+
+            const rawData = audioBuffer.getChannelData(0);
+            const sampleRate = audioBuffer.sampleRate;
+            const hopSize = Math.floor(fftSize / 4);
+            const numFrames = Math.floor((rawData.length - fftSize) / hopSize);
+
+            // Setup canvas resolution
+            const canvasW = Math.min(1000, Math.max(300, numFrames));
+            const canvasH = 300;
+            decodedImageCanvas.width = canvasW;
+            decodedImageCanvas.height = canvasH;
+
+            const real = new Float32Array(fftSize);
+            const imag = new Float32Array(fftSize);
+            const imgData = decodedImgCtx.createImageData(canvasW, canvasH);
+            const pixels = imgData.data;
+
+            // Frame step
+            const frameStep = numFrames / canvasW;
+
+            // Frequency range to display: 500 Hz to 14000 Hz
+            const minBin = Math.floor((500 / sampleRate) * fftSize);
+            const maxBin = Math.min(Math.floor(fftSize / 2), Math.floor((14000 / sampleRate) * fftSize));
+            const usefulBins = maxBin - minBin;
+
+            for (let x = 0; x < canvasW; x++) {
+                const frameIndex = Math.floor(x * frameStep);
+                const offset = frameIndex * hopSize;
+
+                // Windowing (Hanning)
+                for (let i = 0; i < fftSize; i++) {
+                    const win = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (fftSize - 1)));
+                    real[i] = (offset + i < rawData.length ? rawData[offset + i] : 0) * win;
+                    imag[i] = 0;
+                }
+
+                complexFFT(real, imag);
+
+                // Map FFT bins to canvas rows (top row = high freq, bottom row = low freq)
+                for (let y = 0; y < canvasH; y++) {
+                    const binRatio = (canvasH - 1 - y) / (canvasH - 1);
+                    const bin = minBin + Math.floor(binRatio * usefulBins);
+                    
+                    const mag = Math.hypot(real[bin], imag[bin]);
+                    // Convert magnitude to normalized dB scale
+                    const normalized = Math.min(1, Math.max(0, (Math.log10(mag + 1e-4) + 3) / 3)) * contrast;
+
+                    const [r, g, b] = colorFn(normalized);
+                    const pIdx = (y * canvasW + x) * 4;
+                    pixels[pIdx] = r;
+                    pixels[pIdx + 1] = g;
+                    pixels[pIdx + 2] = b;
+                    pixels[pIdx + 3] = 255;
+                }
+            }
+
+            decodedImgCtx.putImageData(imgData, 0, 0);
+            document.getElementById('audioTrackInfo').innerText = `Durasi: ${audioBuffer.duration.toFixed(2)}s | SampleRate: ${sampleRate}Hz`;
+        }
+
+        function redrawDecodedImage() {
+            if (decodedAudioBufferData) {
+                renderSpectrogramFromAudioBuffer(decodedAudioBufferData);
+            }
+        }
+
+        function reprocessAudioIfAvailable() {
+            if (decodedAudioBufferData) {
+                renderSpectrogramFromAudioBuffer(decodedAudioBufferData);
+            }
+        }
+
+        // Live Waterfall Spectrogram via Microphone
+        async function toggleMicrophoneWaterfall() {
+            const btn = document.getElementById('micWaterfallBtn');
+            const icon = document.getElementById('micWaterfallIcon');
+            const text = document.getElementById('micWaterfallText');
+
+            if (waterfallMicActive) {
+                waterfallMicActive = false;
+                text.innerText = 'Dengarkan Suara via Mikrofon (Real-Time)';
+                btn.className = "w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition";
+            } else {
+                if (!isGlobalMicActive) {
+                    await toggleGlobalMicrophone();
+                }
+                waterfallMicActive = true;
+                text.innerText = 'Mendengarkan Gelombang Suara (Klik untuk Stop)';
+                btn.className = "w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 transition";
+                document.getElementById('decodedPlaceholder').classList.add('hidden');
+                
+                // Clear decoded canvas for live scrolling
+                decodedImageCanvas.width = 600;
+                decodedImageCanvas.height = 300;
+                decodedImgCtx.fillStyle = '#050811';
+                decodedImgCtx.fillRect(0, 0, decodedImageCanvas.width, decodedImageCanvas.height);
+            }
+            lucide.createIcons();
+        }
+
+        function captureWaterfallSnapshot() {
+            const dataUrl = decodedImageCanvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `snapshot-suara-${Date.now()}.png`;
+            a.click();
+        }
+
+        function downloadDecodedImage() {
+            captureWaterfallSnapshot();
+        }
+
+
+        // ==========================================
+        // 4. VIDEO ⇄ SUARA (VIDEO <-> SOUND)
+        // ==========================================
+        const sourceVideo = document.getElementById('sourceVideo');
+        const sampleVideoCanvas = document.getElementById('sampleVideoCanvas');
+        const sampleVideoCtx = sampleVideoCanvas.getContext('2d');
+        let isSampleVideoActive = false;
+        let sampleVideoAnimFrame = null;
+        let isVisualSonifyActive = false;
+        let visualSonifyNodes = null;
+        let lastVideoImageData = null;
+
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedVideoFile = file;
+
+            isSampleVideoActive = false;
+            sampleVideoCanvas.classList.add('hidden');
+            sourceVideo.classList.remove('hidden');
+            document.getElementById('videoUploadPrompt').classList.add('hidden');
+
+            const url = URL.createObjectURL(file);
+            sourceVideo.src = url;
+            sourceVideo.load();
+            sourceVideo.play().catch(e => console.log('Autoplay blocked:', e));
+
+            document.getElementById('videoAudioSourceBadge').innerText = 'Video Lokal Terunggah';
+            document.getElementById('videoPlayIcon').setAttribute('data-lucide', 'pause');
+            lucide.createIcons();
+        }
+
+        // Preset Synthetic Animated Video Generator
+        function loadSampleVideoCanvas() {
+            uploadedVideoFile = null;
+            sourceVideo.pause();
+            sourceVideo.classList.add('hidden');
+            sampleVideoCanvas.classList.remove('hidden');
+            document.getElementById('videoUploadPrompt').classList.add('hidden');
+            isSampleVideoActive = true;
+
+            sampleVideoCanvas.width = 640;
+            sampleVideoCanvas.height = 360;
+
+            let angle = 0;
+            function renderSampleVideo() {
+                if (!isSampleVideoActive) return;
+                angle += 0.04;
+                const w = sampleVideoCanvas.width;
+                const h = sampleVideoCanvas.height;
+
+                sampleVideoCtx.fillStyle = '#050811';
+                sampleVideoCtx.fillRect(0, 0, w, h);
+
+                // Rotating gradient geometry
+                for (let i = 0; i < 5; i++) {
+                    const rad = 40 + i * 30 + Math.sin(angle * 2 + i) * 15;
+                    sampleVideoCtx.beginPath();
+                    sampleVideoCtx.arc(w / 2 + Math.cos(angle + i) * 60, h / 2 + Math.sin(angle * 1.5 + i) * 40, rad, 0, Math.PI * 2);
+                    const grad = sampleVideoCtx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, `hsl(${(angle * 50 + i * 40) % 360}, 90%, 60%)`);
+                    grad.addColorStop(1, `hsl(${(angle * 50 + i * 40 + 120) % 360}, 90%, 40%)`);
+                    sampleVideoCtx.fillStyle = grad;
+                    sampleVideoCtx.globalAlpha = 0.4;
+                    sampleVideoCtx.fill();
+                    sampleVideoCtx.globalAlpha = 1.0;
+                }
+
+                // Laser text
+                sampleVideoCtx.font = 'bold 28px sans-serif';
+                sampleVideoCtx.fillStyle = '#ffffff';
+                sampleVideoCtx.textAlign = 'center';
+                sampleVideoCtx.fillText('GELOMBANG SUARA 🎬 VIDEO', w / 2, h - 30);
+
+                sampleVideoAnimFrame = requestAnimationFrame(renderSampleVideo);
+            }
+            renderSampleVideo();
+            document.getElementById('videoAudioSourceBadge').innerText = 'Video Animasi Sampel';
+        }
+
+        function toggleVideoPlayback() {
+            if (isSampleVideoActive) {
+                isSampleVideoActive = false;
+                if (sampleVideoAnimFrame) cancelAnimationFrame(sampleVideoAnimFrame);
+                document.getElementById('videoPlayIcon').setAttribute('data-lucide', 'play');
+            } else {
+                if (sourceVideo.paused) {
+                    sourceVideo.play();
+                    document.getElementById('videoPlayIcon').setAttribute('data-lucide', 'pause');
+                } else {
+                    sourceVideo.pause();
+                    document.getElementById('videoPlayIcon').setAttribute('data-lucide', 'play');
+                }
+            }
+            lucide.createIcons();
+        }
+
+        // Ekstrak Audio Asli dari Video (Extract Original Soundtrack)
+        async function extractSourceAudioFromVideo() {
+            const btn = document.getElementById('btnExtractSourceAudio');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Mengekstrak Audio...</span>`;
+            lucide.createIcons();
+
+            try {
+                let audioBlob = null;
+                const ctx = getAudioContext();
+
+                if (uploadedVideoFile) {
+                    const arrayBuffer = await uploadedVideoFile.arrayBuffer();
+                    const decoded = await ctx.decodeAudioData(arrayBuffer);
+                    const left = decoded.getChannelData(0);
+                    const right = decoded.numberOfChannels > 1 ? decoded.getChannelData(1) : left;
+                    audioBlob = encodeWAV(left, right, decoded.sampleRate);
+                    drawWaveformOnCanvas('videoWaveformCanvas', left);
+                    document.getElementById('videoAudioStatus').innerText = `Audio Asli (${decoded.duration.toFixed(1)}s)`;
+                } else if (sourceVideo.src) {
+                    const response = await fetch(sourceVideo.src);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const decoded = await ctx.decodeAudioData(arrayBuffer);
+                    const left = decoded.getChannelData(0);
+                    const right = decoded.numberOfChannels > 1 ? decoded.getChannelData(1) : left;
+                    audioBlob = encodeWAV(left, right, decoded.sampleRate);
+                    drawWaveformOnCanvas('videoWaveformCanvas', left);
+                    document.getElementById('videoAudioStatus').innerText = `Audio Asli (${decoded.duration.toFixed(1)}s)`;
+                } else {
+                    // Sample synthesized video sound
+                    const dur = 4.0;
+                    const sampleRate = 44100;
+                    const total = dur * sampleRate;
+                    const samples = new Float32Array(total);
+                    for (let i = 0; i < total; i++) {
+                        samples[i] = Math.sin(2 * Math.PI * 220 * i / sampleRate) * 0.4 + Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.3;
+                    }
+                    audioBlob = encodeWAV(samples, samples, sampleRate);
+                    drawWaveformOnCanvas('videoWaveformCanvas', samples);
+                }
+
+                if (audioBlob) {
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `audio-asli-video-${Date.now()}.wav`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (err) {
+                console.error('Ekstraksi audio gagal:', err);
+                alert('File video tidak memuat track audio bawaan atau format kompresi audio tidak didukung langsung. Anda bisa menggunakan opsi B: "Sonifikasi Visual Video" untuk menghasilkan suara dari gerakan visualnya!');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="file-audio" class="w-3.5 h-3.5"></i><span>Ekstrak & Download WAV</span>`;
+            lucide.createIcons();
+        }
+
+        // Sonifikasi Visual Video (Motion, RGB & Luminance to Soundscape)
+        function toggleVisualSonificationLive() {
+            const btnText = document.getElementById('sonifyVisualBtnText');
+            if (isVisualSonifyActive) {
+                isVisualSonifyActive = false;
+                if (visualSonifyNodes) {
+                    visualSonifyNodes.forEach(node => {
+                        try { node.stop(); node.disconnect(); } catch (e) {}
+                    });
+                    visualSonifyNodes = null;
+                }
+                btnText.innerText = 'Dengarkan Suara Visual';
+            } else {
+                isVisualSonifyActive = true;
+                btnText.innerText = 'Hentikan Suara Visual';
+                initVisualSonifySynth();
+            }
+        }
+
+        function initVisualSonifySynth() {
+            const ctx = getAudioContext();
+            const rootFreqs = [130.81, 164.81, 196.00, 246.94, 293.66, 392.00]; // C, E, G, B, D, G chord
+            visualSonifyNodes = [];
+
+            const masterVisualGain = ctx.createGain();
+            masterVisualGain.gain.setValueAtTime(0.3, ctx.currentTime);
+            masterVisualGain.connect(masterGain);
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1000, ctx.currentTime);
+            filter.connect(masterVisualGain);
+
+            // Create oscillators for visual sonification
+            const oscs = [];
+            const gains = [];
+            for (let i = 0; i < rootFreqs.length; i++) {
+                const osc = ctx.createOscillator();
+                osc.type = i % 2 === 0 ? 'sine' : 'sawtooth';
+                osc.frequency.setValueAtTime(rootFreqs[i], ctx.currentTime);
+
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.connect(g);
+                g.connect(filter);
+                osc.start();
+
+                oscs.push(osc);
+                gains.push(g);
+                visualSonifyNodes.push(osc);
+            }
+
+            // Real-time video frame optical processor loop
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = 64;
+            offCanvas.height = 36;
+            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+            function processFrame() {
+                if (!isVisualSonifyActive) return;
+
+                if (!sourceVideo.paused || isSampleVideoActive) {
+                    if (isSampleVideoActive) {
+                        offCtx.drawImage(sampleVideoCanvas, 0, 0, 64, 36);
+                    } else {
+                        offCtx.drawImage(sourceVideo, 0, 0, 64, 36);
+                    }
+
+                    const frame = offCtx.getImageData(0, 0, 64, 36).data;
+                    let totalR = 0, totalG = 0, totalB = 0, totalLum = 0;
+                    let motionDelta = 0;
+
+                    for (let i = 0; i < frame.length; i += 4) {
+                        const r = frame[i];
+                        const g = frame[i + 1];
+                        const b = frame[i + 2];
+                        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        totalR += r;
+                        totalG += g;
+                        totalB += b;
+                        totalLum += lum;
+
+                        if (lastVideoImageData) {
+                            motionDelta += Math.abs(lum - lastVideoImageData[i]);
+                        }
+                    }
+
+                    const numPixels = 64 * 36;
+                    const avgR = totalR / numPixels;
+                    const avgG = totalG / numPixels;
+                    const avgB = totalB / numPixels;
+                    const avgLum = totalLum / numPixels;
+                    const motionNormalized = lastVideoImageData ? Math.min(1, (motionDelta / numPixels) / 40) : 0;
+
+                    lastVideoImageData = new Uint8Array(frame);
+
+                    // Update UI Metrics
+                    document.getElementById('metricMotion').innerText = Math.round(motionNormalized * 100) + '%';
+                    document.getElementById('barMotion').style.width = Math.round(motionNormalized * 100) + '%';
+
+                    document.getElementById('metricBrightness').innerText = Math.round((avgLum / 255) * 100) + '%';
+                    document.getElementById('barBrightness').style.width = Math.round((avgLum / 255) * 100) + '%';
+
+                    document.getElementById('metricRgb').innerText = `R:${Math.round(avgR)} G:${Math.round(avgG)} B:${Math.round(avgB)}`;
+                    const totalC = avgR + avgG + avgB || 1;
+                    document.getElementById('barR').style.width = (avgR / totalC * 100) + '%';
+                    document.getElementById('barG').style.width = (avgG / totalC * 100) + '%';
+                    document.getElementById('barB').style.width = (avgB / totalC * 100) + '%';
+
+                    // Modulate Audio Synthesizer Parameters
+                    const now = ctx.currentTime;
+                    filter.frequency.setTargetAtTime(400 + (avgLum / 255) * 5000, now, 0.05);
+
+                    for (let k = 0; k < oscs.length; k++) {
+                        const base = rootFreqs[k];
+                        const targetFreq = base * (1 + motionNormalized * 0.5);
+                        oscs[k].frequency.setTargetAtTime(targetFreq, now, 0.05);
+                    }
+                }
+
+                requestAnimationFrame(processFrame);
+            }
+            processFrame();
+        }
+
+        // Render and download sonified video soundtrack as WAV
+        function renderVisualSonificationWav() {
+            const sampleRate = 44100;
+            const dur = 5.0;
+            const total = Math.floor(dur * sampleRate);
+            const samples = new Float32Array(total);
+            const rootFreqs = [130.81, 164.81, 196.00, 246.94, 293.66, 392.00];
+
+            for (let i = 0; i < total; i++) {
+                const t = i / sampleRate;
+                let sum = 0;
+                for (let k = 0; k < rootFreqs.length; k++) {
+                    const f = rootFreqs[k] * (1 + Math.sin(t * 2 + k) * 0.05);
+                    sum += Math.sin(2 * Math.PI * f * t) * (0.15 / rootFreqs.length);
+                }
+                samples[i] = sum;
+            }
+
+            const blob = encodeWAV(samples, samples, sampleRate);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `suara-visual-video-${Date.now()}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+
+        // ==========================================
+        // 5. SOUND TO VIDEO (SUARA JADI VIDEO CREATOR)
+        // ==========================================
+        const soundToVideoCanvas = document.getElementById('soundToVideoCanvas');
+        const s2vCtx = soundToVideoCanvas.getContext('2d');
+        let isSoundToVideoPlaying = false;
+        let isVideoRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordedVideoBlob = null;
+        let recordStartTime = 0;
+        let recordTimerInterval = null;
+
+        function handleSoundToVideoAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const ctx = getAudioContext();
+                const decoded = await ctx.decodeAudioData(e.target.result);
+                currentPlayingBuffer = decoded;
+                toggleSoundToVideoPlayback();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Preset Synthwave Track Generator
+        function loadSampleMusicTrack() {
+            const sampleRate = 44100;
+            const dur = 8.0;
+            const total = Math.floor(dur * sampleRate);
+            const left = new Float32Array(total);
+            const right = new Float32Array(total);
+
+            // Synth bass + chord arpeggio
+            const bpm = 120;
+            const beatSamples = (60 / bpm) * sampleRate;
+            const scale = [130.81, 164.81, 196.00, 261.63, 329.63, 392.00];
+
+            for (let i = 0; i < total; i++) {
+                const beat = Math.floor(i / (beatSamples / 2));
+                const note = scale[beat % scale.length];
+                const env = Math.exp(-((i % (beatSamples / 2)) / (sampleRate * 0.2)));
+
+                const bass = Math.sin(2 * Math.PI * 65.41 * i / sampleRate) * 0.5;
+                const lead = Math.sin(2 * Math.PI * note * i / sampleRate) * env * 0.4;
+                const pad = Math.sin(2 * Math.PI * 261.63 * i / sampleRate + Math.sin(i * 0.001)) * 0.2;
+
+                left[i] = bass + lead + pad;
+                right[i] = bass + lead * 0.8 + pad * 1.2;
+            }
 
             const ctx = getAudioContext();
+            currentPlayingBuffer = ctx.createBuffer(2, total, sampleRate);
+            currentPlayingBuffer.getChannelData(0).set(left);
+            currentPlayingBuffer.getChannelData(1).set(right);
 
-            // Disable input sementara saat memancar
-            messageInput.disabled = true;
-            sendBtn.disabled = true;
-            txRxIndicator.classList.remove('hidden');
-            setStatus('Memancarkan sinyal suara...', 'bg-amber-500');
+            toggleSoundToVideoPlayback();
+        }
 
-            // Tambahkan pesan pengirim ke UI Chat
-            appendChatMessage('Pribadi (Anda)', text, 'sent');
-            messageInput.value = '';
+        function toggleSoundToVideoPlayback() {
+            if (isSoundToVideoPlaying) {
+                if (currentPlayingSource) {
+                    try { currentPlayingSource.stop(); } catch (e) {}
+                }
+                isSoundToVideoPlaying = false;
+                document.getElementById('soundToVideoPlayIcon').setAttribute('data-lucide', 'play');
+            } else {
+                if (!currentPlayingBuffer) {
+                    loadSampleMusicTrack();
+                    return;
+                }
+                const ctx = getAudioContext();
+                currentPlayingSource = ctx.createBufferSource();
+                currentPlayingSource.buffer = currentPlayingBuffer;
+                currentPlayingSource.loop = true;
+                currentPlayingSource.connect(globalAnalyser);
+                currentPlayingSource.connect(masterGain);
+                currentPlayingSource.start();
 
-            // Konversi Teks ke Hex String (UTF-8 Bytes -> Hex)
+                isSoundToVideoPlaying = true;
+                document.getElementById('soundToVideoPlayIcon').setAttribute('data-lucide', 'pause');
+            }
+            lucide.createIcons();
+        }
+
+        // Render Dynamic 2D/3D Audio-Reactive Visuals to Canvas
+        let visualAngle = 0;
+        function renderSoundToVideoVisuals() {
+            requestAnimationFrame(renderSoundToVideoVisuals);
+            if (!globalAnalyser) return;
+
+            const bufferLength = globalAnalyser.frequencyBinCount;
+            const freqData = new Uint8Array(bufferLength);
+            const timeData = new Uint8Array(bufferLength);
+            globalAnalyser.getByteFrequencyData(freqData);
+            globalAnalyser.getByteTimeDomainData(timeData);
+
+            const w = soundToVideoCanvas.width;
+            const h = soundToVideoCanvas.height;
+            const mode = document.getElementById('videoVisualizerMode').value || 'cymatics';
+
+            visualAngle += 0.02;
+
+            if (mode === 'cymatics') {
+                // Cymatics & Chladni geometric standing waves
+                s2vCtx.fillStyle = 'rgba(5, 8, 17, 0.2)';
+                s2vCtx.fillRect(0, 0, w, h);
+
+                const bass = freqData[4] / 255;
+                const mid = freqData[20] / 255;
+                const treble = freqData[80] / 255;
+
+                const petals = 6 + Math.floor(mid * 6);
+                const maxR = 120 + bass * 80;
+
+                s2vCtx.save();
+                s2vCtx.translate(w / 2, h / 2);
+                s2vCtx.rotate(visualAngle * 0.5);
+
+                for (let ring = 1; ring <= 4; ring++) {
+                    s2vCtx.beginPath();
+                    s2vCtx.strokeStyle = `hsl(${(visualAngle * 30 + ring * 60) % 360}, 100%, 65%)`;
+                    s2vCtx.lineWidth = 2.5;
+
+                    for (let a = 0; a <= Math.PI * 2; a += 0.05) {
+                        const r = (ring * 35) + Math.sin(a * petals + visualAngle * 2) * (20 * mid) + (bass * 30);
+                        const x = Math.cos(a) * r;
+                        const y = Math.sin(a) * r;
+                        if (a === 0) s2vCtx.moveTo(x, y);
+                        else s2vCtx.lineTo(x, y);
+                    }
+                    s2vCtx.closePath();
+                    s2vCtx.stroke();
+                }
+                s2vCtx.restore();
+
+            } else if (mode === 'terrain3d') {
+                // 3D Spectral Terrain
+                s2vCtx.fillStyle = 'rgba(5, 8, 17, 0.3)';
+                s2vCtx.fillRect(0, 0, w, h);
+
+                const rows = 12;
+                const cols = 24;
+                s2vCtx.strokeStyle = '#38bdf8';
+                s2vCtx.lineWidth = 1.5;
+
+                for (let r = 0; r < rows; r++) {
+                    s2vCtx.beginPath();
+                    for (let c = 0; c < cols; c++) {
+                        const freqIdx = Math.floor((c / cols) * 100);
+                        const amp = (freqData[freqIdx] / 255) * 80;
+                        const x = (c - cols / 2) * (20 + r * 3) + w / 2;
+                        const y = (r * 18) + h / 2 - amp * (1 - r / rows);
+                        if (c === 0) s2vCtx.moveTo(x, y);
+                        else s2vCtx.lineTo(x, y);
+                    }
+                    s2vCtx.stroke();
+                }
+
+            } else if (mode === 'lissajous') {
+                // Laser Oscilloscope
+                s2vCtx.fillStyle = 'rgba(5, 8, 17, 0.15)';
+                s2vCtx.fillRect(0, 0, w, h);
+
+                s2vCtx.beginPath();
+                s2vCtx.strokeStyle = '#22d3ee';
+                s2vCtx.lineWidth = 2.5;
+                s2vCtx.shadowColor = '#06b6d4';
+                s2vCtx.shadowBlur = 10;
+
+                for (let i = 0; i < 150; i++) {
+                    const t1 = (timeData[i * 2] - 128) / 128.0;
+                    const t2 = (timeData[(i * 2 + 50) % 256] - 128) / 128.0;
+                    const x = w / 2 + t1 * (w * 0.35);
+                    const y = h / 2 + t2 * (h * 0.35);
+                    if (i === 0) s2vCtx.moveTo(x, y);
+                    else s2vCtx.lineTo(x, y);
+                }
+                s2vCtx.stroke();
+                s2vCtx.shadowBlur = 0;
+
+            } else {
+                // Neon Quantum Rings
+                s2vCtx.fillStyle = 'rgba(5, 8, 17, 0.2)';
+                s2vCtx.fillRect(0, 0, w, h);
+
+                for (let i = 0; i < 40; i++) {
+                    const val = freqData[i * 3] / 255;
+                    const rad = 30 + i * 5 + val * 50;
+                    const a = visualAngle + i * 0.3;
+                    const x = w / 2 + Math.cos(a) * rad;
+                    const y = h / 2 + Math.sin(a) * rad;
+
+                    s2vCtx.fillStyle = `hsl(${(i * 9 + visualAngle * 50) % 360}, 100%, 60%)`;
+                    s2vCtx.beginPath();
+                    s2vCtx.arc(x, y, 3 + val * 6, 0, Math.PI * 2);
+                    s2vCtx.fill();
+                }
+            }
+        }
+        renderSoundToVideoVisuals();
+
+        // Record Canvas & Audio Stream into Video (.WebM)
+        function toggleVideoRecording() {
+            const btn = document.getElementById('btnRecordVideo');
+            const text = document.getElementById('recordVideoText');
+            const icon = document.getElementById('recordVideoIcon');
+            const overlay = document.getElementById('recordingIndicatorOverlay');
+
+            if (isVideoRecording) {
+                // Stop recording
+                isVideoRecording = false;
+                clearInterval(recordTimerInterval);
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                text.innerText = 'Mulai Rekam Video';
+                icon.className = 'w-3.5 h-3.5 fill-current text-white';
+                btn.className = "py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow";
+                overlay.classList.add('hidden');
+            } else {
+                // Start recording
+                const ctx = getAudioContext();
+                const canvasStream = soundToVideoCanvas.captureStream(30);
+
+                // Mix audio stream
+                const dest = ctx.createMediaStreamDestination();
+                masterGain.connect(dest);
+
+                const combinedStream = new MediaStream([
+                    ...canvasStream.getVideoTracks(),
+                    ...dest.stream.getAudioTracks()
+                ]);
+
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+                } catch (e) {
+                    mediaRecorder = new MediaRecorder(combinedStream);
+                }
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    recordedVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const videoUrl = URL.createObjectURL(recordedVideoBlob);
+                    const preview = document.getElementById('recordedVideoPreview');
+                    preview.src = videoUrl;
+                    document.getElementById('recordedVideoContainer').classList.remove('hidden');
+                    document.getElementById('btnDownloadRecordedVideo').disabled = false;
+                };
+
+                mediaRecorder.start();
+                isVideoRecording = true;
+                recordStartTime = Date.now();
+                overlay.classList.remove('hidden');
+
+                text.innerText = 'Stop Perekaman';
+                btn.className = "py-2.5 bg-slate-800 hover:bg-slate-700 text-rose-400 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow";
+
+                recordTimerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+                    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                    const s = String(elapsed % 60).padStart(2, '0');
+                    document.getElementById('recordTimer').innerText = `${m}:${s}`;
+                }, 500);
+            }
+            lucide.createIcons();
+        }
+
+        function downloadRecordedVideoFile() {
+            if (!recordedVideoBlob) return;
+            const url = URL.createObjectURL(recordedVideoBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video-dari-suara-${Date.now()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+
+        // ==========================================
+        // 6. SOUNDCHAT (ACOUSTIC TEXT TRANSCEIVER)
+        // ==========================================
+        const FREQ_START = 800;
+        const FREQ_END = 2400;
+        const FREQ_BASE = 1000;
+        const FREQ_STEP = 80;
+        let lastSentChatWavBlob = null;
+        let chatRxBuffer = [];
+        let chatRxState = 'IDLE';
+        let chatLastSymbol = null;
+        let chatSymbolCount = 0;
+
+        async function sendChatMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('chatInputMessage');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const btn = document.getElementById('btnSendChat');
+            btn.disabled = true;
+            input.disabled = true;
+
+            appendChatBubble('Pribadi (Anda)', text, 'sent');
+            input.value = '';
+
+            const symbolDuration = parseInt(document.getElementById('chatBaudRate').value) || 90;
+            const silenceGap = 20;
+
+            // Text to Hex
             const encoder = new TextEncoder();
             const bytes = encoder.encode(text);
             let hexStr = '';
@@ -190,277 +2355,158 @@
                 hexStr += b.toString(16).padStart(2, '0').toUpperCase();
             }
 
-            // Susun urutan frekuensi yang akan dipancarkan
-            // Format Paket: [START_TONE] -> [HEX SYMBOLS...] -> [END_TONE]
-            const frequencies = [];
-            frequencies.push(FREQ_START); // Start Frame
-            
+            const freqs = [FREQ_START];
             for (let char of hexStr) {
                 const val = parseInt(char, 16);
-                const freq = FREQ_BASE + (val * FREQ_STEP);
-                frequencies.push(freq);
+                freqs.push(FREQ_BASE + val * FREQ_STEP);
             }
-            
-            frequencies.push(FREQ_END); // End Frame
+            freqs.push(FREQ_END);
 
-            // Pemancaran Nada Berurutan
-            for (let i = 0; i < frequencies.length; i++) {
-                await playTone(ctx, frequencies[i], SYMBOL_DURATION);
-                await sleep(SILENCE_GAP);
+            // Synthesize chat audio into buffer for playback & export
+            const sampleRate = 44100;
+            const totalDur = (freqs.length * (symbolDuration + silenceGap)) / 1000;
+            const totalSamples = Math.floor(totalDur * sampleRate);
+            const samples = new Float32Array(totalSamples);
+
+            let offset = 0;
+            for (let f of freqs) {
+                const toneSamples = Math.floor((symbolDuration / 1000) * sampleRate);
+                for (let s = 0; s < toneSamples; s++) {
+                    const t = s / sampleRate;
+                    const fade = Math.sin((s / toneSamples) * Math.PI);
+                    samples[offset + s] = Math.sin(2 * Math.PI * f * t) * fade * 0.8;
+                }
+                offset += toneSamples + Math.floor((silenceGap / 1000) * sampleRate);
             }
 
-            // Kembalikan status UI
-            messageInput.disabled = false;
-            sendBtn.disabled = false;
-            txRxIndicator.classList.add('hidden');
-            messageInput.focus();
-            if (isReceiving) {
-                setStatus('Siap Mendengarkan Sinyal Suara...', 'bg-emerald-500');
-            } else {
-                setStatus('Mikrofon Mati', 'bg-slate-500');
-            }
+            lastSentChatWavBlob = encodeWAV(samples, null, sampleRate);
+            document.getElementById('btnExportChatWav').disabled = false;
+
+            // Play over speakers
+            const ctx = getAudioContext();
+            const buffer = ctx.createBuffer(1, totalSamples, sampleRate);
+            buffer.getChannelData(0).set(samples);
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+            src.connect(masterGain);
+            src.start();
+
+            src.onended = () => {
+                btn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            };
         }
 
-        // Fungsi Pemutar Tone Tunggal (Sinusoidal Oscillator)
-        function playTone(ctx, freq, duration) {
-            return new Promise((resolve) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-                // Fade-in dan Fade-out halus untuk menghindari distorsi transient 'click'
-                gain.gain.setValueAtTime(0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.01);
-                gain.gain.setValueAtTime(0.8, ctx.currentTime + (duration / 1000) - 0.01);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + (duration / 1000));
-
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + (duration / 1000));
-
-                osc.onended = () => {
-                    resolve();
-                };
-            });
+        function exportLastChatAsWav() {
+            if (!lastSentChatWavBlob) return;
+            const url = URL.createObjectURL(lastSentChatWavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pesan-suara-${Date.now()}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        // --- MENERIMA PESAN (RECEIVER / PENERIMA) ---
-        async function toggleReceiver() {
-            if (isReceiving) {
-                stopReceiver();
-            } else {
-                await startReceiver();
-            }
-        }
-
-        async function startReceiver() {
+        async function handleChatAudioFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             try {
+                const arrayBuffer = await file.arrayBuffer();
                 const ctx = getAudioContext();
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                
-                const source = ctx.createMediaStreamSource(micStream);
-                analyser = ctx.createAnalyser();
-                analyser.fftSize = 4096; // Resolusi frekuensi tinggi
-                analyser.smoothingTimeConstant = 0.2;
-                source.connect(analyser);
-
-                isReceiving = true;
-                micStatusText.innerText = 'Mikrofon Aktif';
-                toggleMicBtn.classList.replace('bg-slate-700', 'bg-emerald-600');
-                toggleMicBtn.classList.replace('hover:bg-slate-600', 'hover:bg-emerald-500');
-                setStatus('Siap Mendengarkan Sinyal Suara...', 'bg-emerald-500');
-
-                // Visualizer Spectrum Loop
-                drawVisualizer();
-
-                // Decoder Processing Loop (Mendeteksi Puncak Frekuensi)
-                rxInterval = setInterval(processAudioFrame, 35);
-
+                const decoded = await ctx.decodeAudioData(arrayBuffer);
+                // Decode MFSK offline
+                decodeOfflineMfskAudio(decoded);
             } catch (err) {
-                console.error('Akses mikrofon ditolak atau gagal:', err);
-                alert('Gagal mengakses mikrofon. Pastikan Anda memberikan izin akses mikrofon di browser.');
+                console.error('Gagal mendekode file pesan:', err);
+                alert('Format file tidak didukung.');
             }
         }
 
-        function stopReceiver() {
-            isReceiving = false;
-            if (micStream) {
-                micStream.getTracks().forEach(track => track.stop());
-            }
-            if (rxInterval) clearInterval(rxInterval);
+        function decodeOfflineMfskAudio(audioBuffer) {
+            const data = audioBuffer.getChannelData(0);
+            const sampleRate = audioBuffer.sampleRate;
+            const fftSize = 2048;
+            const hop = 512;
+            const numFrames = Math.floor((data.length - fftSize) / hop);
+            const real = new Float32Array(fftSize);
+            const imag = new Float32Array(fftSize);
 
-            micStatusText.innerText = 'Mulai Mendengarkan';
-            toggleMicBtn.classList.replace('bg-emerald-600', 'bg-slate-700');
-            toggleMicBtn.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-600');
-            setStatus('Mikrofon Ditiadakan / Mati', 'bg-slate-500');
-        }
+            let hexChars = [];
+            let inPacket = false;
+            let lastChar = null;
+            let count = 0;
 
-        // Proses FFT dan Dekoder Gelombang Suara
-        function processAudioFrame() {
-            if (!analyser || !isReceiving) return;
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
-
-            const sampleRate = audioCtx.sampleRate;
-            const binSize = sampleRate / analyser.fftSize; // ~10.76 Hz per bin
-
-            // Cari amplitudo & frekuensi dominan dalam rentang gelombang SoundChat
-            let maxAmp = 0;
-            let peakFreq = 0;
-
-            const minBin = Math.floor(600 / binSize);
-            const maxBin = Math.floor(2600 / binSize);
-
-            for (let i = minBin; i <= maxBin; i++) {
-                if (dataArray[i] > maxAmp) {
-                    maxAmp = dataArray[i];
-                    peakFreq = i * binSize;
+            for (let f = 0; f < numFrames; f++) {
+                const off = f * hop;
+                for (let i = 0; i < fftSize; i++) {
+                    real[i] = data[off + i];
+                    imag[i] = 0;
                 }
-            }
+                complexFFT(real, imag);
 
-            // Threshold Amplitudo Sinyal Minimum (mencegah noise latar belakang)
-            if (maxAmp < 110) {
-                sameSymbolCount = 0;
-                lastHexSymbol = null;
-                return;
-            }
-
-            // Deteksi Tone Start (800 Hz)
-            if (isFrequencyMatch(peakFreq, FREQ_START, 45)) {
-                if (rxState !== 'RECEIVING') {
-                    rxState = 'RECEIVING';
-                    rxBuffer = [];
-                    lastHexSymbol = null;
-                    sameSymbolCount = 0;
-                    setStatus('Menerima Gelombang Suara...', 'bg-indigo-500 animate-pulse');
+                let maxAmp = 0, peakBin = 0;
+                for (let k = 10; k < fftSize / 2; k++) {
+                    const mag = Math.hypot(real[k], imag[k]);
+                    if (mag > maxAmp) {
+                        maxAmp = mag;
+                        peakBin = k;
+                    }
                 }
-                return;
-            }
 
-            // Deteksi Tone End (2400 Hz)
-            if (isFrequencyMatch(peakFreq, FREQ_END, 45) && rxState === 'RECEIVING') {
-                rxState = 'IDLE';
-                decodeReceivedBuffer(rxBuffer);
-                rxBuffer = [];
-                setStatus('Pesan Berhasil Didekode!', 'bg-emerald-500');
-                setTimeout(() => {
-                    if (isReceiving) setStatus('Siap Mendengarkan Sinyal Suara...', 'bg-emerald-500');
-                }, 1500);
-                return;
-            }
-
-            // Dekode Simbol Hex jika sedang dalam State RECEIVING
-            if (rxState === 'RECEIVING') {
-                for (let hexVal = 0; hexVal < 16; hexVal++) {
-                    const targetFreq = FREQ_BASE + (hexVal * FREQ_STEP);
-                    if (isFrequencyMatch(peakFreq, targetFreq, 35)) {
-                        const hexChar = hexVal.toString(16).toUpperCase();
-                        
-                        // Menangani penerimaan simbol berturut-turut
-                        if (hexChar === lastHexSymbol) {
-                            sameSymbolCount++;
-                            // Jika nada bertahan beberapa frame, anggap sebagai karakter baru
-                            if (sameSymbolCount === 3) {
-                                rxBuffer.push(hexChar);
-                            }
-                        } else {
-                            lastHexSymbol = hexChar;
-                            sameSymbolCount = 1;
-                            rxBuffer.push(hexChar);
-                        }
+                const peakFreq = (peakBin * sampleRate) / fftSize;
+                if (maxAmp > 5) {
+                    if (Math.abs(peakFreq - FREQ_START) < 45) {
+                        inPacket = true;
+                        hexChars = [];
+                    } else if (Math.abs(peakFreq - FREQ_END) < 45 && inPacket) {
+                        inPacket = false;
                         break;
+                    } else if (inPacket) {
+                        for (let h = 0; h < 16; h++) {
+                            const tf = FREQ_BASE + h * FREQ_STEP;
+                            if (Math.abs(peakFreq - tf) < 35) {
+                                const char = h.toString(16).toUpperCase();
+                                if (char === lastChar) {
+                                    count++;
+                                    if (count === 3) hexChars.push(char);
+                                } else {
+                                    lastChar = char;
+                                    count = 1;
+                                    hexChars.push(char);
+                                }
+                                break;
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        function isFrequencyMatch(freq, target, tolerance) {
-            return Math.abs(freq - target) <= tolerance;
-        }
-
-        // Dekode Buffer Hex menjadi Teks
-        function decodeReceivedBuffer(hexArray) {
-            if (!hexArray || hexArray.length < 2) return;
-
-            let hexStr = hexArray.join('');
-            
-            // Pastikan panjang hex genap (pasangan 2 digit untuk 1 byte)
-            if (hexStr.length % 2 !== 0) {
-                hexStr = hexStr.substring(0, hexStr.length - 1);
-            }
-
-            try {
-                const bytes = new Uint8Array(hexStr.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-                const decoder = new TextDecoder('utf-8');
-                const decodedText = decoder.decode(bytes);
-
-                if (decodedText && decodedText.trim().length > 0) {
-                    appendChatMessage('Penerima Suara', decodedText, 'received');
+            if (hexChars.length >= 2) {
+                let hexStr = hexChars.join('');
+                if (hexStr.length % 2 !== 0) hexStr = hexStr.slice(0, -1);
+                try {
+                    const bytes = new Uint8Array(hexStr.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+                    const decodedText = new TextDecoder('utf-8').decode(bytes);
+                    if (decodedText.trim()) {
+                        appendChatBubble('Pesan Audio File', decodedText, 'received');
+                    }
+                } catch (e) {
+                    console.log('Hex decode error:', e);
                 }
-            } catch (e) {
-                console.error('Gagal mendekode data hex:', e);
             }
         }
 
-        // --- TAMPIALN UI & SPECTRUM VISUALIZER ---
-        function drawVisualizer() {
-            if (!isReceiving) {
-                canvasCtx.clearRect(0, 0, visualizer.width, visualizer.height);
-                return;
-            }
-
-            requestAnimationFrame(drawVisualizer);
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
-
-            visualizer.width = visualizer.clientWidth;
-            visualizer.height = visualizer.clientHeight;
-
-            canvasCtx.fillStyle = 'rgb(15, 23, 42)';
-            canvasCtx.fillRect(0, 0, visualizer.width, visualizer.height);
-
-            const barWidth = (visualizer.width / 120);
-            let x = 0;
-
-            for (let i = 0; i < 120; i++) {
-                // Tampilkan spectrum di area frekuensi yang terjangkau (800 - 2500Hz)
-                const binIndex = Math.floor(i * 3);
-                const barHeight = (dataArray[binIndex] / 255) * visualizer.height;
-
-                // Gradient warna audio spectrum
-                const gradient = canvasCtx.createLinearGradient(0, visualizer.height, 0, 0);
-                gradient.addColorStop(0, '#4f46e5');
-                gradient.addColorStop(1, '#06b6d4');
-
-                canvasCtx.fillStyle = gradient;
-                canvasCtx.fillRect(x, visualizer.height - barHeight, barWidth - 1, barHeight);
-
-                x += barWidth;
-            }
-        }
-
-        // Menambahkan Gelembung Pesan pada Chat Feed
-        function appendChatMessage(sender, text, type) {
-            const msgDiv = document.createElement('div');
+        function appendChatBubble(sender, text, type) {
+            const feed = document.getElementById('chatFeed');
+            const div = document.createElement('div');
             const isSent = type === 'sent';
-
-            msgDiv.className = `flex flex-col ${isSent ? 'items-end' : 'items-start'} mb-1 animate-fade-in`;
+            div.className = `flex flex-col ${isSent ? 'items-end' : 'items-start'} mb-1`;
 
             const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            msgDiv.innerHTML = `
+            div.innerHTML = `
                 <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${
-                    isSent 
-                    ? 'bg-indigo-600 text-white rounded-br-none' 
-                    : 'bg-slate-700 text-slate-100 rounded-bl-none border border-slate-600'
+                    isSent ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700'
                 }">
                     <div class="text-[10px] font-semibold opacity-75 mb-0.5 flex items-center gap-1">
                         <i data-lucide="${isSent ? 'radio-tower' : 'volume-2'}" class="w-3 h-3"></i>
@@ -470,38 +2516,306 @@
                     <div class="text-[9px] opacity-60 text-right mt-1">${timeStr}</div>
                 </div>
             `;
-
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            feed.appendChild(div);
+            feed.scrollTop = feed.scrollHeight;
             lucide.createIcons();
         }
 
-        function setStatus(text, dotClass) {
-            statusText.innerText = text;
-            statusDot.className = `w-2.5 h-2.5 rounded-full ${dotClass}`;
+        function setQuickChatMessage(text) {
+            const input = document.getElementById('chatInputMessage');
+            input.value = text;
+            input.focus();
         }
 
-        function setQuickMessage(text) {
-            messageInput.value = text;
-            messageInput.focus();
+
+        // ==========================================
+        // 7. LAB SPEKTROGRAM & FREKUENSI
+        // ==========================================
+        const labWaterfallCanvas = document.getElementById('labWaterfallCanvas');
+        const labCtx = labWaterfallCanvas.getContext('2d');
+
+        function playLabTone(freq, type = 'sine') {
+            const ctx = getAudioContext();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+            g.gain.setValueAtTime(0, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+            g.gain.setValueAtTime(0.5, ctx.currentTime + 0.95);
+            g.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.0);
+
+            osc.connect(g);
+            g.connect(globalAnalyser);
+            g.connect(masterGain);
+            osc.start();
+            osc.stop(ctx.currentTime + 1.0);
         }
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+        function playLabChirp(fStart, fEnd, dur) {
+            const ctx = getAudioContext();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(fStart, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(fEnd, ctx.currentTime + dur);
+
+            g.gain.setValueAtTime(0.5, ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+
+            osc.connect(g);
+            g.connect(globalAnalyser);
+            g.connect(masterGain);
+            osc.start();
+            osc.stop(ctx.currentTime + dur);
         }
 
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        function playLabNoise(type, dur) {
+            const ctx = getAudioContext();
+            const bufferSize = ctx.sampleRate * dur;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                if (type === 'pink') {
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.96900 * b2 + white * 0.1538520;
+                    b3 = 0.86650 * b3 + white * 0.3104856;
+                    b4 = 0.55000 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+                    b6 = white * 0.115926;
+                } else {
+                    data[i] = white * 0.3;
+                }
+            }
+
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+            src.connect(globalAnalyser);
+            src.connect(masterGain);
+            src.start();
         }
 
-        // Auto start receiver saat load halaman
+
+        // ==========================================
+        // 8. GLOBAL VISUALIZERS & WATERFALL LOOP
+        // ==========================================
+        const miniSpectrumCanvas = document.getElementById('miniSpectrumCanvas');
+        const miniCtx = miniSpectrumCanvas.getContext('2d');
+
+        function startVisualizersLoop() {
+            function loop() {
+                requestAnimationFrame(loop);
+                if (!globalAnalyser) return;
+
+                const bufferLength = globalAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                globalAnalyser.getByteFrequencyData(dataArray);
+
+                // Find peak frequency
+                let maxAmp = 0;
+                let peakBin = 0;
+                for (let i = 2; i < bufferLength; i++) {
+                    if (dataArray[i] > maxAmp) {
+                        maxAmp = dataArray[i];
+                        peakBin = i;
+                    }
+                }
+                const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
+                const peakFreq = Math.round((peakBin * sampleRate) / globalAnalyser.fftSize);
+
+                if (maxAmp > 20) {
+                    document.getElementById('peakFreqDisplay').innerText = `${peakFreq} Hz`;
+                    const labPeak = document.getElementById('labPeakFreq');
+                    if (labPeak) labPeak.innerText = `${peakFreq} Hz`;
+                }
+
+                // Mini Top Spectrum Bar
+                miniSpectrumCanvas.width = miniSpectrumCanvas.clientWidth || 300;
+                miniSpectrumCanvas.height = miniSpectrumCanvas.clientHeight || 20;
+                miniCtx.fillStyle = '#050811';
+                miniCtx.fillRect(0, 0, miniSpectrumCanvas.width, miniSpectrumCanvas.height);
+
+                const barW = miniSpectrumCanvas.width / 60;
+                for (let i = 0; i < 60; i++) {
+                    const binIdx = Math.floor(i * 2.5);
+                    const barH = (dataArray[binIdx] / 255) * miniSpectrumCanvas.height;
+                    miniCtx.fillStyle = '#06b6d4';
+                    miniCtx.fillRect(i * barW, miniSpectrumCanvas.height - barH, barW - 1, barH);
+                }
+
+                // Lab Waterfall Scrolling Spectrogram
+                if (labWaterfallCanvas && !document.getElementById('section-spectrogram-lab').classList.contains('hidden')) {
+                    const w = labWaterfallCanvas.width;
+                    const h = labWaterfallCanvas.height;
+
+                    // Shift canvas down by 2 pixels
+                    labCtx.drawImage(labWaterfallCanvas, 0, 0, w, h - 2, 0, 2, w, h - 2);
+
+                    // Draw new frequency line at top
+                    for (let x = 0; x < w; x++) {
+                        const bin = Math.floor((x / w) * (bufferLength / 2));
+                        const val = dataArray[bin] / 255;
+                        const [r, g, b] = COLOR_PALETTES.inferno(val);
+                        labCtx.fillStyle = `rgb(${r},${g},${b})`;
+                        labCtx.fillRect(x, 0, 1, 2);
+                    }
+                }
+
+                // Sound to Image Live Waterfall
+                if (waterfallMicActive && decodedImageCanvas) {
+                    const w = decodedImageCanvas.width;
+                    const h = decodedImageCanvas.height;
+                    
+                    // Shift canvas left by 2 pixels
+                    decodedImgCtx.drawImage(decodedImageCanvas, 2, 0, w - 2, h, 0, 0, w - 2, h);
+
+                    // Draw new frequency column at right
+                    const palette = document.getElementById('spectrogramPalette').value || 'inferno';
+                    const colorFn = COLOR_PALETTES[palette] || COLOR_PALETTES.inferno;
+                    const contrast = parseFloat(document.getElementById('spectrogramContrast').value) || 1.2;
+
+                    for (let y = 0; y < h; y++) {
+                        const ratio = (h - 1 - y) / (h - 1);
+                        const bin = Math.floor(ratio * (bufferLength * 0.45));
+                        const val = Math.min(1, (dataArray[bin] / 255) * contrast);
+                        const [r, g, b] = colorFn(val);
+                        decodedImgCtx.fillStyle = `rgb(${r},${g},${b})`;
+                        decodedImgCtx.fillRect(w - 2, y, 2, 1);
+                    }
+                }
+
+                // MFSK Real-time chat demodulator
+                if (isGlobalMicActive) {
+                    processLiveMfskFrame(peakFreq, maxAmp);
+                }
+            }
+            loop();
+        }
+
+        function processLiveMfskFrame(peakFreq, maxAmp) {
+            if (maxAmp < 100) {
+                chatSymbolCount = 0;
+                chatLastSymbol = null;
+                return;
+            }
+
+            if (Math.abs(peakFreq - FREQ_START) < 45) {
+                if (chatRxState !== 'RECEIVING') {
+                    chatRxState = 'RECEIVING';
+                    chatRxBuffer = [];
+                    chatLastSymbol = null;
+                    document.getElementById('chatSignalStatus').innerText = 'Menerima Sinyal...';
+                }
+                return;
+            }
+
+            if (Math.abs(peakFreq - FREQ_END) < 45 && chatRxState === 'RECEIVING') {
+                chatRxState = 'IDLE';
+                document.getElementById('chatSignalStatus').innerText = 'Pesan Selesai Didekode';
+                if (chatRxBuffer.length >= 2) {
+                    let hexStr = chatRxBuffer.join('');
+                    if (hexStr.length % 2 !== 0) hexStr = hexStr.slice(0, -1);
+                    try {
+                        const bytes = new Uint8Array(hexStr.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+                        const text = new TextDecoder('utf-8').decode(bytes);
+                        if (text.trim()) appendChatBubble('Penerima Suara (Live)', text, 'received');
+                    } catch (e) {}
+                }
+                chatRxBuffer = [];
+                return;
+            }
+
+            if (chatRxState === 'RECEIVING') {
+                for (let h = 0; h < 16; h++) {
+                    const targetF = FREQ_BASE + h * FREQ_STEP;
+                    if (Math.abs(peakFreq - targetF) < 35) {
+                        const sym = h.toString(16).toUpperCase();
+                        document.getElementById('chatReceivedSymbol').innerText = sym;
+                        if (sym === chatLastSymbol) {
+                            chatSymbolCount++;
+                            if (chatSymbolCount === 3) chatRxBuffer.push(sym);
+                        } else {
+                            chatLastSymbol = sym;
+                            chatSymbolCount = 1;
+                            chatRxBuffer.push(sym);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Global Audio Playback Handler
+        function playAudioBuffer(buffer, title = 'Audio Gelombang Suara') {
+            const ctx = getAudioContext();
+            if (currentPlayingSource) {
+                try { currentPlayingSource.stop(); } catch (e) {}
+            }
+
+            currentPlayingBuffer = buffer;
+            currentPlayingSource = ctx.createBufferSource();
+            currentPlayingSource.buffer = buffer;
+            currentPlayingSource.connect(globalAnalyser);
+            currentPlayingSource.connect(masterGain);
+            currentPlayingSource.start();
+
+            currentAudioStartTime = ctx.currentTime;
+            document.getElementById('globalAudioPlayerBar').classList.remove('hidden');
+            document.getElementById('globalAudioTitle').innerText = title;
+            document.getElementById('globalPlayPauseIcon').setAttribute('data-lucide', 'pause');
+
+            if (globalAudioInterval) clearInterval(globalAudioInterval);
+            globalAudioInterval = setInterval(() => {
+                if (!currentPlayingSource) return;
+                const elapsed = ctx.currentTime - currentAudioStartTime;
+                const dur = buffer.duration;
+                if (elapsed >= dur) {
+                    stopGlobalAudio();
+                } else {
+                    const curM = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                    const curS = String(Math.floor(elapsed % 60)).padStart(2, '0');
+                    const durM = String(Math.floor(dur / 60)).padStart(2, '0');
+                    const durS = String(Math.floor(dur % 60)).padStart(2, '0');
+                    document.getElementById('globalAudioTime').innerText = `${curM}:${curS} / ${durM}:${durS}`;
+                    document.getElementById('globalAudioSeek').value = (elapsed / dur) * 100;
+                }
+            }, 250);
+
+            lucide.createIcons();
+        }
+
+        function stopGlobalAudio() {
+            if (currentPlayingSource) {
+                try { currentPlayingSource.stop(); } catch (e) {}
+                currentPlayingSource = null;
+            }
+            if (globalAudioInterval) clearInterval(globalAudioInterval);
+            document.getElementById('globalAudioPlayerBar').classList.add('hidden');
+        }
+
+        function toggleGlobalAudioPlayPause() {
+            if (currentPlayingSource) {
+                stopGlobalAudio();
+            } else if (currentPlayingBuffer) {
+                playAudioBuffer(currentPlayingBuffer);
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Initialize on Window Load
         window.addEventListener('load', () => {
-            // Pengguna bisa mengaktifkan mikrofon via tombol
+            initDrawingCanvas();
+            lucide.createIcons();
+            startVisualizersLoop();
         });
     </script>
 </body>
